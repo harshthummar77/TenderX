@@ -1,0 +1,12 @@
+{
+  "name": "@tenderbridge/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Express 5 + Prisma 6 API for TenderBridge",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"configured in plans/01_SETUP_AND_NEON.md\" && exit 1",
+    "build": "echo \"configured in plans/01_SETUP_AND_NEON.md\" && exit 1",
+    "test": "echo \"configured in plans/18_TESTING.md\" && exit 0"
+  }
+}

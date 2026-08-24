@@ -1,0 +1,22 @@
+{
+  "name": "@tenderbridge/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zod schemas, enums and types shared by server and client",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  }
+}

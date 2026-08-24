@@ -1,0 +1,11 @@
+{
+  "name": "@tenderbridge/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vite 6 + React 19 SPA for TenderBridge",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"configured in plans/16_FRONTEND_FOUNDATION.md\" && exit 1",
+    "build": "echo \"configured in plans/16_FRONTEND_FOUNDATION.md\" && exit 1"
+  }
+}

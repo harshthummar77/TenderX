@@ -1,12 +1,58 @@
 {
-  "name": "@tenderbridge/server",
-  "version": "0.1.0",
+  "name": "@tb/server",
+  "version": "1.0.0",
   "private": true,
   "description": "Express 5 + Prisma 6 API for TenderBridge",
   "type": "module",
+  "main": "dist/server.js",
   "scripts": {
-    "dev": "echo \"configured in plans/01_SETUP_AND_NEON.md\" && exit 1",
-    "build": "echo \"configured in plans/01_SETUP_AND_NEON.md\" && exit 1",
-    "test": "echo \"configured in plans/18_TESTING.md\" && exit 0"
+    "dev": "tsx watch src/server.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed/index.ts",
+    "test": "vitest run"
+  },
+  "prisma": {
+    "schema": "prisma/schema"
+  },
+  "dependencies": {
+    "@prisma/client": "^6",
+    "@react-pdf/renderer": "^4",
+    "@tb/shared": "*",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "date-fns": "^4",
+    "decimal.js": "^10",
+    "express": "^5",
+    "express-rate-limit": "^7",
+    "helmet": "^8",
+    "jsonwebtoken": "^9",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3",
+    "nodemailer": "^6",
+    "pino": "^9",
+    "pino-http": "^10",
+    "zod": "^3.23"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5",
+    "@types/jsonwebtoken": "^9",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22",
+    "@types/nodemailer": "^6",
+    "@types/supertest": "^6",
+    "prisma": "^6",
+    "supertest": "^7",
+    "tsx": "^4",
+    "typescript": "^5.6",
+    "vitest": "^2"
   }
 }

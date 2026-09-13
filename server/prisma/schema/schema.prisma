@@ -1,0 +1,15 @@
+// Multi-file schema: every model lands in its own file in this folder (plan 02).
+// This file holds only the generator and the datasource.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled endpoint — the running app.
+  url       = env("DATABASE_URL")
+  // Direct endpoint — migrate / db push / db seed / studio.
+  // Using the pooled URL for migrations is the #1 Neon + Prisma failure.
+  directUrl = env("DIRECT_URL")
+}

@@ -1,0 +1,30 @@
+/* Placeholder styling only. Plan 16 replaces this with Tailwind 4 + the design system. */
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+}
+
+.app {
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.25rem 1rem;
+}
+
+dt {
+  font-weight: 600;
+}
+
+dd {
+  margin: 0;
+}

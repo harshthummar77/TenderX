@@ -7,6 +7,9 @@ coverage/
 .env.*
 !.env.example
 
+.vercel/
+.turbo/
+
 *.log
 npm-debug.log*
 

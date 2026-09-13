@@ -1,11 +1,39 @@
 {
-  "name": "@tenderbridge/client",
-  "version": "0.1.0",
+  "name": "@tb/client",
+  "version": "1.0.0",
   "private": true,
   "description": "Vite 6 + React 19 SPA for TenderBridge",
   "type": "module",
   "scripts": {
-    "dev": "echo \"configured in plans/16_FRONTEND_FOUNDATION.md\" && exit 1",
-    "build": "echo \"configured in plans/16_FRONTEND_FOUNDATION.md\" && exit 1"
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3",
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-table": "^8",
+    "@tb/shared": "*",
+    "axios": "^1",
+    "clsx": "^2",
+    "date-fns": "^4",
+    "lucide-react": "^0.460.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-hook-form": "^7",
+    "react-router-dom": "^7",
+    "recharts": "^2",
+    "tailwind-merge": "^2",
+    "zod": "^3.23",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "tailwindcss": "^4",
+    "typescript": "^5.6",
+    "vite": "^6"
   }
 }

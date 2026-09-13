@@ -1,11 +1,16 @@
 /**
- * @tenderbridge/shared
+ * @tb/shared — the contract both apps import.
  *
- * Single source of truth for Zod schemas, enums and types consumed by BOTH
- * the server and the client. Nothing runtime-specific (no Express, no DOM)
- * may be imported here.
- *
- * Populated from plan 02 (enums) and plan 03 onward (per-module schemas).
+ * Nothing runtime-specific belongs here: no Express, no DOM, no Prisma client.
+ * Run `npm run build:shared` after changing anything in this package; that is
+ * the fix for every stale-types error.
  */
 
-export const SHARED_PACKAGE_VERSION = '0.1.0';
+export * from './enums.js';
+export * from './constants.js';
+export * from './types.js';
+export * from './utils.js';
+export * from './schemas/index.js';
+
+/** Imported by both apps in plan 01 to prove the workspace link works. */
+export const SHARED_PACKAGE_VERSION = '1.0.0';

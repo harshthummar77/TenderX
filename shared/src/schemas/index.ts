@@ -5,4 +5,5 @@
  * payment (13). Both apps import from `@tb/shared` — never a duplicated schema.
  */
 export * from './common.js';
+export * from './auth.js';
 export * from './org.js';

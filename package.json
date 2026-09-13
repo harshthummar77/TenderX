@@ -24,10 +24,11 @@
     "db:studio": "npm run db:studio -w server",
     "db:seed": "npm run db:seed -w server",
     "test": "npm run test -w server",
-    "typecheck": "tsc -b --noEmit shared server client",
+    "typecheck": "npm run build:shared && tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit",
     "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "concurrently": "^9",
     "eslint": "^9",
     "prettier": "^3",

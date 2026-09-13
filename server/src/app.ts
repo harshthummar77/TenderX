@@ -1,8 +1,9 @@
+import type { IncomingMessage } from 'node:http';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
-import pinoHttp from 'pino-http';
+import { pinoHttp } from 'pino-http';
 import { API_PREFIX } from './config/app.js';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
@@ -32,7 +33,13 @@ app.use(cors({ origin: env.APP_URL, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(requestContext);
-app.use(pinoHttp({ logger, genReqId: (req) => req.id }));
+app.use(
+  pinoHttp({
+    logger,
+    // requestContext ran first, so every log line carries the same id as the response header.
+    genReqId: (req: IncomingMessage) => (req as IncomingMessage & { id: string }).id,
+  }),
+);
 app.use(globalRateLimit);
 
 app.use(API_PREFIX, router);

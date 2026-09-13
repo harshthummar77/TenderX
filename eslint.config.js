@@ -21,6 +21,8 @@ export default tseslint.config(
     // Money is never a JS number (00 §6, 01 §10).
     files: ['server/src/**/*.ts'],
     rules: {
+      // pino is the logger; console is allowed only in env.ts, which boots before it.
+      'no-console': 'error',
       'no-restricted-globals': [
         'error',
         { name: 'parseFloat', message: 'Money is decimal.js. Use money()/round2() from lib/money.' },

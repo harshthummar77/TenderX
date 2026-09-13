@@ -82,7 +82,7 @@ export function errorHandler(
   if (status >= 500) {
     log.error({ err }, 'Unhandled error');
   } else {
-    log.warn({ msg: message }, 'Request failed');
+    log.warn({ reason: message }, 'Request failed');
   }
 
   res.status(status).json({

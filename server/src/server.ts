@@ -6,7 +6,7 @@ import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
 
 const server = app.listen(env.PORT, () =>
-  logger.info({ port: env.PORT, env: env.NODE_ENV, version: APP_VERSION }, 'API up'),
+  logger.info({ port: env.PORT, version: APP_VERSION }, 'API up'),
 );
 
 registerJobs();

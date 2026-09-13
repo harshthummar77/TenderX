@@ -3,11 +3,15 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 /**
- * Load server/.env with Node's built-in loader — no dotenv dependency.
- * Real environments (Render, CI) inject variables directly and have no .env,
- * and process.env always wins over the file's values.
+ * Load the right env file with Node's built-in loader — no dotenv dependency.
+ * Real environments (Render, CI) inject variables directly and have no file.
+ *
+ * NODE_ENV=test loads server/.env.test, which points at the Neon `test` branch.
+ * The suite truncates tables between files, so this one line is what stops
+ * `npm test` from ever reaching `dev` or `main`.
  */
-const envFile = fileURLToPath(new URL('../../.env', import.meta.url));
+const envFileName = process.env.NODE_ENV === 'test' ? '../../.env.test' : '../../.env';
+const envFile = fileURLToPath(new URL(envFileName, import.meta.url));
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 /**

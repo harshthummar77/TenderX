@@ -18,6 +18,13 @@ export default tseslint.config(
     },
   },
   {
+    // Plain Node scripts: no tsconfig behind them, so declare the globals.
+    files: ['**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly', URL: 'readonly', Buffer: 'readonly' },
+    },
+  },
+  {
     // Money is never a JS number (00 §6, 01 §10).
     files: ['server/src/**/*.ts'],
     rules: {

@@ -1,0 +1,297 @@
+// PurchaseOrder → Delivery → Grn → Invoice → Payment.
+// Every relation downstream of the PO is one-to-many: partial deliveries,
+// several invoices per PO, part payments (defect C7).
+
+model PurchaseOrder {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  organizationId String  @db.Uuid
+  vendorId       String  @db.Uuid
+  tenderId       String? @db.Uuid
+  quotationId    String? @db.Uuid
+  poNumber       String // PO/2025-26/000042
+
+  status           PoStatus         @default(DRAFT)
+  fulfilmentStatus FulfilmentStatus @default(NOT_STARTED) // derived
+
+  // --- frozen party snapshot, taken at issue ---
+  buyerName       String
+  buyerGstin      String?
+  buyerAddress    String
+  buyerStateCode  String
+  vendorName      String
+  vendorGstin     String?
+  vendorAddress   String
+  vendorStateCode String
+
+  placeOfSupplyStateCode String
+  taxRegime              TaxRegime
+
+  subtotal       Decimal @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal @default(0) @db.Decimal(18, 2)
+  taxableAmount  Decimal @default(0) @db.Decimal(18, 2)
+  cgstAmount     Decimal @default(0) @db.Decimal(18, 2)
+  sgstAmount     Decimal @default(0) @db.Decimal(18, 2)
+  igstAmount     Decimal @default(0) @db.Decimal(18, 2)
+  freightAmount  Decimal @default(0) @db.Decimal(18, 2)
+  roundOff       Decimal @default(0) @db.Decimal(18, 2)
+  totalAmount    Decimal @default(0) @db.Decimal(18, 2)
+  currency       String  @default("INR")
+
+  expectedDeliveryDate DateTime @db.Timestamptz(3)
+  deliveryAddress      String
+  paymentTerms         String?
+  termsAndConditions   String?
+
+  createdById        String    @db.Uuid
+  issuedAt           DateTime? @db.Timestamptz(3)
+  acceptedAt         DateTime? @db.Timestamptz(3)
+  rejectedAt         DateTime? @db.Timestamptz(3)
+  rejectionReason    String?
+  cancelledAt        DateTime? @db.Timestamptz(3)
+  cancellationReason String?
+  closedAt           DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  vendor       Vendor              @relation(fields: [vendorId], references: [id])
+  tender       Tender?             @relation(fields: [tenderId], references: [id])
+  quotation    Quotation?          @relation(fields: [quotationId], references: [id])
+  items        PurchaseOrderItem[]
+  deliveries   Delivery[]
+  grns         Grn[]
+  invoices     Invoice[]
+
+  @@unique([organizationId, poNumber])
+  @@index([organizationId, status])
+  @@index([vendorId, status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String  @id @default(uuid(7)) @db.Uuid
+  purchaseOrderId String  @db.Uuid
+  tenderItemId    String? @db.Uuid
+  srNo            Int
+
+  description     String
+  hsnCode         String?
+  unit            String
+  quantity        Decimal @db.Decimal(18, 3)
+  unitPrice       Decimal @db.Decimal(18, 2)
+  discountPercent Decimal @default(0) @db.Decimal(5, 2)
+  taxableValue    Decimal @db.Decimal(18, 2)
+  taxRatePercent  Decimal @db.Decimal(5, 2)
+  cgstAmount      Decimal @default(0) @db.Decimal(18, 2)
+  sgstAmount      Decimal @default(0) @db.Decimal(18, 2)
+  igstAmount      Decimal @default(0) @db.Decimal(18, 2)
+  lineTotal       Decimal @db.Decimal(18, 2)
+
+  // --- derived running totals, only ever written inside a transaction ---
+  receivedQuantity Decimal @default(0) @db.Decimal(18, 3)
+  acceptedQuantity Decimal @default(0) @db.Decimal(18, 3)
+  invoicedQuantity Decimal @default(0) @db.Decimal(18, 3)
+
+  purchaseOrder PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  tenderItem    TenderItem?    @relation(fields: [tenderItemId], references: [id])
+  deliveryItems DeliveryItem[]
+  grnItems      GrnItem[]
+  invoiceItems  InvoiceItem[]
+
+  @@unique([purchaseOrderId, srNo])
+  @@map("purchase_order_items")
+}
+
+model Delivery {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  purchaseOrderId   String         @db.Uuid
+  vendorId          String         @db.Uuid
+  challanNumber     String
+  dispatchedAt      DateTime       @db.Timestamptz(3)
+  expectedAt        DateTime?      @db.Timestamptz(3)
+  deliveredAt       DateTime?      @db.Timestamptz(3)
+  carrierName       String?
+  trackingReference String?
+  status            DeliveryStatus @default(DISPATCHED)
+  notes             String?
+  createdAt         DateTime       @default(now()) @db.Timestamptz(3)
+
+  purchaseOrder PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  vendor        Vendor         @relation(fields: [vendorId], references: [id])
+  items         DeliveryItem[]
+  grns          Grn[]
+
+  @@index([purchaseOrderId])
+  @@map("deliveries")
+}
+
+model DeliveryItem {
+  id                  String  @id @default(uuid(7)) @db.Uuid
+  deliveryId          String  @db.Uuid
+  purchaseOrderItemId String  @db.Uuid
+  quantity            Decimal @db.Decimal(18, 3)
+
+  delivery          Delivery          @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+
+  @@unique([deliveryId, purchaseOrderItemId])
+  @@map("delivery_items")
+}
+
+model Grn {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  organizationId  String    @db.Uuid
+  purchaseOrderId String    @db.Uuid
+  deliveryId      String?   @db.Uuid
+  grnNumber       String // GRN/2025-26/000031
+  status          GrnStatus // derived from its items
+  receivedById    String    @db.Uuid
+  receivedAt      DateTime  @db.Timestamptz(3)
+  remarks         String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  delivery      Delivery?     @relation(fields: [deliveryId], references: [id])
+  items         GrnItem[]
+
+  @@unique([organizationId, grnNumber])
+  @@index([purchaseOrderId])
+  @@map("grns")
+}
+
+model GrnItem {
+  id                  String  @id @default(uuid(7)) @db.Uuid
+  grnId               String  @db.Uuid
+  purchaseOrderItemId String  @db.Uuid
+  receivedQuantity    Decimal @db.Decimal(18, 3)
+  acceptedQuantity    Decimal @db.Decimal(18, 3)
+  rejectedQuantity    Decimal @default(0) @db.Decimal(18, 3)
+  rejectionReason     String?
+
+  grn               Grn               @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+
+  @@unique([grnId, purchaseOrderItemId])
+  @@map("grn_items")
+}
+
+/// The vendor raises this, never the buyer (defect C3). It clears only after
+/// the three-way match against the PO and the GRNs.
+model Invoice {
+  id              String @id @default(uuid(7)) @db.Uuid
+  organizationId  String @db.Uuid
+  vendorId        String @db.Uuid
+  purchaseOrderId String @db.Uuid
+
+  vendorInvoiceNumber String // the number on the vendor own invoice
+  referenceNumber     String // our internal INV/2025-26/000018
+  invoiceDate         DateTime @db.Timestamptz(3)
+  dueDate             DateTime @db.Timestamptz(3)
+
+  subtotal       Decimal @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal @default(0) @db.Decimal(18, 2)
+  taxableAmount  Decimal @default(0) @db.Decimal(18, 2)
+  cgstAmount     Decimal @default(0) @db.Decimal(18, 2)
+  sgstAmount     Decimal @default(0) @db.Decimal(18, 2)
+  igstAmount     Decimal @default(0) @db.Decimal(18, 2)
+  freightAmount  Decimal @default(0) @db.Decimal(18, 2)
+  roundOff       Decimal @default(0) @db.Decimal(18, 2)
+  totalAmount    Decimal @default(0) @db.Decimal(18, 2)
+  amountPaid     Decimal @default(0) @db.Decimal(18, 2) // derived from payments
+
+  status         InvoiceStatus @default(DRAFT)
+  matchStatus    MatchStatus   @default(NOT_RUN)
+  matchResult    Json? // the full check list, see plan 12
+  matchRunAt     DateTime?     @db.Timestamptz(3)
+  overriddenById String?       @db.Uuid
+  overrideReason String?
+
+  submittedAt     DateTime? @db.Timestamptz(3)
+  approvedById    String?   @db.Uuid
+  approvedAt      DateTime? @db.Timestamptz(3)
+  rejectionReason String?
+  paidAt          DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  vendor        Vendor        @relation(fields: [vendorId], references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  items         InvoiceItem[]
+  payments      Payment[]
+
+  @@unique([vendorId, vendorInvoiceNumber]) // duplicate-invoice detection
+  @@unique([organizationId, referenceNumber])
+  @@index([organizationId, status])
+  @@index([purchaseOrderId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id                  String  @id @default(uuid(7)) @db.Uuid
+  invoiceId           String  @db.Uuid
+  purchaseOrderItemId String  @db.Uuid
+  description         String
+  hsnCode             String?
+  unit                String
+  quantity            Decimal @db.Decimal(18, 3)
+  unitPrice           Decimal @db.Decimal(18, 2)
+  taxableValue        Decimal @db.Decimal(18, 2)
+  taxRatePercent      Decimal @db.Decimal(5, 2)
+  cgstAmount          Decimal @default(0) @db.Decimal(18, 2)
+  sgstAmount          Decimal @default(0) @db.Decimal(18, 2)
+  igstAmount          Decimal @default(0) @db.Decimal(18, 2)
+  lineTotal           Decimal @db.Decimal(18, 2)
+
+  invoice           Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+
+  @@unique([invoiceId, purchaseOrderItemId])
+  @@map("invoice_items")
+}
+
+/// grossAmount is what reduces the invoice balance.
+/// netAmount = grossAmount − tds − retention − otherDeduction is only what left
+/// the bank. Settlement compares amountPaid (sum of GROSS) to totalAmount —
+/// getting this backwards means invoices never settle (plan 13).
+model Payment {
+  id             String @id @default(uuid(7)) @db.Uuid
+  organizationId String @db.Uuid
+  vendorId       String @db.Uuid
+  invoiceId      String @db.Uuid
+  paymentNumber  String // PAY/2025-26/000009
+
+  grossAmount     Decimal @db.Decimal(18, 2) // amount applied against the invoice
+  tdsAmount       Decimal @default(0) @db.Decimal(18, 2)
+  tdsSection      String? // "194C", "194J"
+  retentionAmount Decimal @default(0) @db.Decimal(18, 2)
+  otherDeduction  Decimal @default(0) @db.Decimal(18, 2)
+  netAmount       Decimal @db.Decimal(18, 2) // what actually left the bank
+
+  method          PaymentMethod
+  referenceNumber String? // UTR / cheque number
+  paidAt          DateTime      @db.Timestamptz(3)
+  valueDate       DateTime?     @db.Timestamptz(3)
+
+  status        PaymentStatus @default(PENDING_APPROVAL)
+  recordedById  String        @db.Uuid
+  approvedById  String?       @db.Uuid
+  approvedAt    DateTime?     @db.Timestamptz(3)
+  remarks       String?
+  failureReason String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  vendor       Vendor       @relation(fields: [vendorId], references: [id])
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id])
+
+  @@unique([organizationId, paymentNumber])
+  @@index([invoiceId])
+  @@index([organizationId, status])
+  @@map("payments")
+}

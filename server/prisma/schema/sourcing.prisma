@@ -1,0 +1,189 @@
+// Tender → Quotation → Approval. The sealed-bid half of the lifecycle.
+
+model Tender {
+  id              String  @id @default(uuid(7)) @db.Uuid
+  organizationId  String  @db.Uuid
+  referenceNumber String // TND/2025-26/000012
+  title           String
+  description     String
+  categoryId      String? @db.Uuid
+
+  estimatedBudget Decimal? @db.Decimal(18, 2) // never shown to vendors
+  currency        String   @default("INR")
+
+  deliveryLocation      String
+  deliveryStateCode     String
+  deliveryDeadline      DateTime  @db.Timestamptz(3)
+  bidSubmissionDeadline DateTime  @db.Timestamptz(3) // the seal breaks here
+  bidOpenedAt           DateTime? @db.Timestamptz(3)
+
+  status           TenderStatus     @default(DRAFT)
+  evaluationMethod EvaluationMethod @default(LOWEST_PRICE)
+  /// [{ key:"price", label:"Price", weight:60, direction:"lower_is_better" }, ...]
+  criteria         Json             @default("[]")
+
+  termsAndConditions String?
+
+  createdById        String    @db.Uuid
+  publishedAt        DateTime? @db.Timestamptz(3)
+  closedAt           DateTime? @db.Timestamptz(3)
+  cancelledAt        DateTime? @db.Timestamptz(3)
+  cancellationReason String?
+
+  recommendedQuotationId String?   @db.Uuid
+  recommendationNote     String?
+  recommendedById        String?   @db.Uuid
+  recommendedAt          DateTime? @db.Timestamptz(3)
+
+  awardedQuotationId String?   @db.Uuid
+  awardedAt          DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  category       Category?          @relation(fields: [categoryId], references: [id])
+  items          TenderItem[]
+  invitations    TenderInvitation[]
+  quotations     Quotation[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([organizationId, referenceNumber])
+  @@index([organizationId, status])
+  @@index([status, bidSubmissionDeadline]) // drives the deadline sweeper
+  @@map("tenders")
+}
+
+model TenderItem {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  tenderId           String   @db.Uuid
+  srNo               Int
+  description        String
+  specifications     String?
+  hsnCode            String?
+  unit               String // NOS, KG, MTR, SET, LOT
+  quantity           Decimal  @db.Decimal(18, 3)
+  taxRatePercent     Decimal  @default(18) @db.Decimal(5, 2)
+  estimatedUnitPrice Decimal? @db.Decimal(18, 2)
+
+  tender             Tender              @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  quotationItems     QuotationItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@unique([tenderId, srNo])
+  @@map("tender_items")
+}
+
+model TenderInvitation {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tenderId       String    @db.Uuid
+  vendorId       String    @db.Uuid
+  invitedAt      DateTime  @default(now()) @db.Timestamptz(3)
+  viewedAt       DateTime? @db.Timestamptz(3)
+  respondedAt    DateTime? @db.Timestamptz(3)
+  declinedReason String?
+
+  tender Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([tenderId, vendorId])
+  @@index([vendorId])
+  @@map("tender_invitations")
+}
+
+model Quotation {
+  id              String @id @default(uuid(7)) @db.Uuid
+  tenderId        String @db.Uuid
+  vendorId        String @db.Uuid
+  referenceNumber String
+
+  status QuotationStatus @default(DRAFT)
+
+  subtotal       Decimal @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal @default(0) @db.Decimal(18, 2)
+  taxableAmount  Decimal @default(0) @db.Decimal(18, 2)
+  taxAmount      Decimal @default(0) @db.Decimal(18, 2)
+  freightAmount  Decimal @default(0) @db.Decimal(18, 2)
+  grandTotal     Decimal @default(0) @db.Decimal(18, 2)
+
+  deliveryDays Int     @default(0)
+  validityDays Int     @default(30)
+  paymentTerms String?
+  notes        String?
+
+  submittedAt      DateTime? @db.Timestamptz(3)
+  sealHash         String? // sha256 of the canonical submitted payload
+  withdrawnAt      DateTime? @db.Timestamptz(3)
+  withdrawalReason String?
+
+  revisionNumber Int     @default(1)
+  revisionOfId   String? @db.Uuid
+  isLatest       Boolean @default(true)
+
+  criteriaScores Json? // { quality: 8, support: 7 } manual scores
+  priceScore     Decimal?  @db.Decimal(6, 2)
+  technicalScore Decimal?  @db.Decimal(6, 2)
+  totalScore     Decimal?  @db.Decimal(6, 2)
+  rank           Int?
+  evaluatedAt    DateTime? @db.Timestamptz(3)
+  evaluationNote String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  tender         Tender          @relation(fields: [tenderId], references: [id])
+  vendor         Vendor          @relation(fields: [vendorId], references: [id])
+  items          QuotationItem[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([tenderId, vendorId, revisionNumber])
+  @@index([tenderId, status])
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id           String @id @default(uuid(7)) @db.Uuid
+  quotationId  String @db.Uuid
+  tenderItemId String @db.Uuid
+
+  quantity        Decimal @db.Decimal(18, 3)
+  unitPrice       Decimal @db.Decimal(18, 2)
+  discountPercent Decimal @default(0) @db.Decimal(5, 2)
+  taxableValue    Decimal @db.Decimal(18, 2)
+  taxRatePercent  Decimal @db.Decimal(5, 2)
+  taxAmount       Decimal @db.Decimal(18, 2)
+  lineTotal       Decimal @db.Decimal(18, 2)
+  deliveryDays    Int?
+  brandOrMake     String?
+  remarks         String?
+
+  quotation  Quotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  tenderItem TenderItem @relation(fields: [tenderItemId], references: [id])
+
+  @@unique([quotationId, tenderItemId])
+  @@map("quotation_items")
+}
+
+/// Separation of duties lives here: requestedById can never equal decidedById.
+model Approval {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  organizationId String         @db.Uuid
+  entityType     ApprovalEntity
+  entityId       String         @db.Uuid
+  amount         Decimal?       @db.Decimal(18, 2)
+
+  status        ApprovalStatus @default(PENDING)
+  requestedById String         @db.Uuid
+  requestedAt   DateTime       @default(now()) @db.Timestamptz(3)
+  requestNote   String?
+
+  decidedById     String?   @db.Uuid
+  decidedAt       DateTime? @db.Timestamptz(3)
+  decisionComment String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([entityType, entityId])
+  @@map("approvals")
+}

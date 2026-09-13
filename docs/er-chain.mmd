@@ -1,0 +1,53 @@
+%% The itemised traceability chain — the answer to "why is this not a CRUD project".
+%% Given any invoice line you can walk back to the tender line that started it.
+%% Full 25-entity map: er-diagram.mmd
+erDiagram
+    TenderItem {
+        int srNo
+        string description
+        string hsnCode
+        string unit
+        decimal quantity "18,3 — what was asked for"
+        decimal taxRatePercent
+        decimal estimatedUnitPrice "internal only"
+    }
+    QuotationItem {
+        decimal quantity "18,3"
+        decimal unitPrice "18,2 — sealed until the deadline"
+        decimal discountPercent
+        decimal taxableValue
+        decimal taxAmount
+        decimal lineTotal
+    }
+    PurchaseOrderItem {
+        int srNo
+        decimal quantity "18,3 — what was ordered"
+        decimal unitPrice "18,2 — frozen at issue"
+        decimal cgstAmount
+        decimal sgstAmount
+        decimal igstAmount
+        decimal receivedQuantity "derived"
+        decimal acceptedQuantity "derived"
+        decimal invoicedQuantity "derived"
+    }
+    DeliveryItem {
+        decimal quantity "18,3 — what was dispatched"
+    }
+    GrnItem {
+        decimal receivedQuantity "18,3"
+        decimal acceptedQuantity "18,3"
+        decimal rejectedQuantity "accepted + rejected = received"
+        string rejectionReason
+    }
+    InvoiceItem {
+        decimal quantity "18,3 — what was billed"
+        decimal unitPrice "18,2 — matched against the PO"
+        decimal taxableValue
+        decimal lineTotal
+    }
+
+    TenderItem ||--o{ QuotationItem : "vendors bid per line"
+    TenderItem |o--o{ PurchaseOrderItem : "awarded line becomes an order line"
+    PurchaseOrderItem ||--o{ DeliveryItem : "dispatched in parts"
+    PurchaseOrderItem ||--o{ GrnItem : "received in parts"
+    PurchaseOrderItem ||--o{ InvoiceItem : "billed in parts"

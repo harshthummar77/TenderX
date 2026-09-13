@@ -1,0 +1,177 @@
+// Users and the two party types they can belong to.
+// A user belongs to exactly one party: organizationId XOR vendorId (platform
+// admins belong to neither). Enforced by the user_single_party CHECK.
+
+model User {
+  id           String     @id @default(uuid(7)) @db.Uuid
+  email        String     @unique // always stored lowercase
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         Role
+  status       UserStatus @default(ACTIVE)
+
+  organizationId String? @db.Uuid
+  vendorId       String? @db.Uuid
+
+  lastLoginAt         DateTime? @db.Timestamptz(3)
+  failedLoginCount    Int       @default(0)
+  lockedUntil         DateTime? @db.Timestamptz(3)
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  organization  Organization?  @relation(fields: [organizationId], references: [id])
+  vendor        Vendor?        @relation(fields: [vendorId], references: [id])
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  invitesSent   Invitation[]   @relation("InvitedBy")
+  activityLogs  ActivityLog[]  @relation("Actor")
+
+  @@index([organizationId])
+  @@index([vendorId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @db.Uuid
+  tokenHash    String    @unique // sha256 of the opaque token; the raw value is never stored
+  familyId     String    @db.Uuid // rotation family — reuse revokes the whole family
+  expiresAt    DateTime  @db.Timestamptz(3)
+  revokedAt    DateTime? @db.Timestamptz(3)
+  replacedById String?   @db.Uuid
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+model Invitation {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  email          String
+  fullName       String?
+  role           Role
+  organizationId String?   @db.Uuid
+  vendorId       String?   @db.Uuid
+  tokenHash      String    @unique
+  invitedById    String    @db.Uuid
+  expiresAt      DateTime  @db.Timestamptz(3)
+  acceptedAt     DateTime? @db.Timestamptz(3)
+  revokedAt      DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+
+  invitedBy User @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@index([email])
+  @@map("invitations")
+}
+
+model Organization {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  name      String
+  legalName String?
+  gstin     String? @unique
+  pan       String?
+  email     String  @unique
+  phone     String?
+
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  stateCode    String // GST state code, e.g. "24" — drives CGST/SGST vs IGST
+  pincode      String
+  country      String  @default("IN")
+
+  status   OrganizationStatus @default(PENDING_APPROVAL)
+  settings Json               @default("{}")
+  logoUrl  String?
+
+  approvedAt   DateTime? @db.Timestamptz(3)
+  approvedById String?   @db.Uuid
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  users           User[]
+  tenders         Tender[]
+  approvals       Approval[]
+  purchaseOrders  PurchaseOrder[]
+  grns            Grn[]
+  invoices        Invoice[]
+  payments        Payment[]
+  numberSequences NumberSequence[]
+  documents       Document[]
+  activityLogs    ActivityLog[]
+
+  @@map("organizations")
+}
+
+model Vendor {
+  id          String  @id @default(uuid(7)) @db.Uuid
+  companyName String
+  legalName   String?
+  gstin       String? @unique
+  pan         String?
+  email       String  @unique
+  phone       String
+
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  stateCode    String
+  pincode      String
+  country      String  @default("IN")
+
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String? // never appears in a public DTO — see plan 06
+  bankIfsc          String?
+
+  status             VendorStatus @default(PENDING_APPROVAL)
+  statusReason       String?
+  rating             Decimal?     @db.Decimal(3, 2) // 0.00 – 5.00, computed in plan 15
+  totalOrders        Int          @default(0)
+  onTimeDeliveryRate Decimal?     @db.Decimal(5, 2)
+
+  approvedAt   DateTime? @db.Timestamptz(3)
+  approvedById String?   @db.Uuid
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  users          User[]
+  categories     Category[] // implicit m2m -> _CategoryToVendor
+  invitations    TenderInvitation[]
+  quotations     Quotation[]
+  purchaseOrders PurchaseOrder[]
+  deliveries     Delivery[]
+  invoices       Invoice[]
+  payments       Payment[]
+  documents      Document[]
+
+  @@index([status])
+  @@map("vendors")
+}
+
+/// Flat, not nested. Nesting was cut (00 §3): a parentId self-relation would
+/// put a recursive CTE behind every category query.
+model Category {
+  id          String  @id @default(uuid(7)) @db.Uuid
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  vendors Vendor[]
+  tenders Tender[]
+
+  @@map("categories")
+}

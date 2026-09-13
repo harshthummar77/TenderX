@@ -13,10 +13,14 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:deploy:test": "node scripts/prisma-env.mjs .env.test migrate deploy",
+    "db:status:test": "node scripts/prisma-env.mjs .env.test migrate status",
+    "db:reset": "prisma migrate reset"
   },
   "prisma": {
-    "schema": "prisma/schema"
+    "schema": "prisma/schema",
+    "seed": "tsx prisma/seed/index.ts"
   },
   "dependencies": {
     "@prisma/client": "^6",

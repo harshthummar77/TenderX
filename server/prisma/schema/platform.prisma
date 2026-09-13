@@ -1,0 +1,101 @@
+// Cross-cutting infrastructure: file registry, notifications, the append-only
+// audit log, and the document numbering sequences.
+
+model Document {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  ownerType      String // "VENDOR" | "TENDER" | "INVOICE" | ...
+  ownerId        String       @db.Uuid
+  organizationId String?      @db.Uuid
+  vendorId       String?      @db.Uuid
+  type           DocumentType
+
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  storageKey   String // cloudinary public_id
+  checksum     String? // sha256 of the bytes
+  uploadedById String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  vendor       Vendor?       @relation(fields: [vendorId], references: [id])
+
+  @@index([ownerType, ownerId])
+  @@map("documents")
+}
+
+/// Written in the SAME transaction as the state change it announces. The email
+/// is best-effort and never awaited on the critical path (defect C12).
+model Notification {
+  id          String           @id @default(uuid(7)) @db.Uuid
+  userId      String           @db.Uuid
+  type        NotificationType
+  title       String
+  body        String
+  entityType  String?
+  entityId    String?          @db.Uuid
+  link        String?
+  readAt      DateTime?        @db.Timestamptz(3)
+  emailSentAt DateTime?        @db.Timestamptz(3)
+  emailError  String?
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+/// Append-only and hash-chained. CREATE RULE blocks UPDATE and DELETE at the
+/// database level, so the application itself cannot rewrite history (defect C9).
+model ActivityLog {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  sequence       BigInt  @unique @default(autoincrement()) // chain order
+  organizationId String? @db.Uuid
+  vendorId       String? @db.Uuid
+
+  actorId    String? @db.Uuid
+  actorEmail String?
+  actorRole  Role?
+
+  action     String // "tender.published"
+  entityType String
+  entityId   String?       @db.Uuid
+  summary    String
+  before     Json?
+  after      Json?
+  severity   AuditSeverity @default(INFO)
+
+  ipAddress String?
+  userAgent String?
+
+  hash         String // sha256(canonical(row) + previousHash)
+  previousHash String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  actor        User?         @relation("Actor", fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([organizationId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("activity_logs")
+}
+
+/// Atomic INSERT ... ON CONFLICT DO UPDATE RETURNING gives gapless,
+/// fiscal-year-scoped numbers under concurrency (defect C15).
+model NumberSequence {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  organizationId String          @db.Uuid
+  docType        DocSequenceType
+  fiscalYear     String // "2025-26"
+  prefix         String // "PO"
+  nextValue      Int             @default(1)
+  padding        Int             @default(6)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, docType, fiscalYear])
+  @@map("number_sequences")
+}

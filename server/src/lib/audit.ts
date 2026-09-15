@@ -34,9 +34,30 @@ export interface AuditInput {
   after?: Prisma.InputJsonValue | null;
 }
 
+/**
+ * Stable JSON: object keys sorted, recursively.
+ *
+ * `before` and `after` land in a Prisma `Json` column, which is **jsonb** on
+ * Postgres — jsonb normalises whitespace and does not preserve key order. A
+ * plain JSON.stringify therefore hashes one way on write and another way on
+ * read, and every verification fails on an untampered chain. Sorting both sides
+ * makes the hash depend on the data, not on the order it happened to be typed.
+ */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, v]) => `${JSON.stringify(key)}:${stableStringify(v)}`);
+
+  return `{${entries.join(',')}}`;
+}
+
 /** Field order is fixed, so the same row always hashes to the same value. */
 const canonical = (input: AuditInput, previousHash: string | null, createdAt: string): string =>
-  JSON.stringify([
+  stableStringify([
     input.action,
     input.entityType,
     input.entityId ?? null,
@@ -91,4 +112,65 @@ export async function writeAudit(tx: Prisma.TransactionClient, input: AuditInput
       createdAt,
     },
   });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Verification                                                               */
+/* -------------------------------------------------------------------------- */
+
+export interface ChainVerification {
+  valid: boolean;
+  checked: number;
+  /** Sequence number of the first row whose hash does not reproduce. */
+  brokenAt: number | null;
+}
+
+/**
+ * Walk the chain and recompute every hash. Any edit to history — even one the
+ * two Postgres rules somehow allowed — breaks this row and every row after it.
+ *
+ * Plan 14 exposes this as an endpoint and a screen; plan 05 already reports the
+ * boolean on the platform dashboard.
+ */
+export async function verifyAuditChain(
+  client: Prisma.TransactionClient,
+  limit?: number,
+): Promise<ChainVerification> {
+  const rows = await client.activityLog.findMany({
+    orderBy: { sequence: 'asc' },
+    ...(limit ? { take: limit } : {}),
+  });
+
+  let previousHash: string | null = null;
+  let checked = 0;
+
+  for (const row of rows) {
+    const expected = sha256(
+      canonical(
+        {
+          action: row.action,
+          entityType: row.entityType,
+          entityId: row.entityId,
+          summary: row.summary,
+          severity: row.severity,
+          organizationId: row.organizationId,
+          vendorId: row.vendorId,
+          actor: { userId: row.actorId },
+          before: row.before as Prisma.InputJsonValue | null,
+          after: row.after as Prisma.InputJsonValue | null,
+        },
+        previousHash,
+        row.createdAt.toISOString(),
+      ),
+    );
+
+    checked += 1;
+    if (expected !== row.hash || row.previousHash !== previousHash) {
+      return { valid: false, checked, brokenAt: Number(row.sequence) };
+    }
+
+    previousHash = row.hash;
+  }
+
+  return { valid: true, checked, brokenAt: null };
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../constants.js';
-import { isValidGstin } from '../utils.js';
+import { isValidGstin, validateIfsc } from '../utils.js';
 
 /**
  * Building blocks reused by every module schema. One rule with no exceptions:
@@ -71,5 +71,11 @@ export const hsnSchema = z
   .string()
   .trim()
   .regex(/^\d{4}(\d{2})?(\d{2})?$/, 'HSN/SAC must be 4, 6 or 8 digits');
+
+export const ifscSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .refine(validateIfsc, 'Must be a valid IFSC (4 letters, 0, then 6 alphanumerics)');
 
 export const isoDateTimeSchema = z.string().datetime({ offset: true });

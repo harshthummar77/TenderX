@@ -247,3 +247,35 @@ export function fiscalYearRange(label: string): { start: Date; end: Date } {
     end: new Date(Date.UTC(startYear + 1, 3, 1) - IST_OFFSET_MS),
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/* PAN, IFSC, account masking                                                 */
+/* -------------------------------------------------------------------------- */
+
+const PAN_PATTERN = /^[A-Z]{5}\d{4}[A-Z]$/;
+/** The fifth character of an IFSC is always zero. */
+const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
+export const validatePan = (pan: string): boolean => PAN_PATTERN.test((pan ?? '').trim().toUpperCase());
+
+export const validateIfsc = (ifsc: string): boolean =>
+  IFSC_PATTERN.test((ifsc ?? '').trim().toUpperCase());
+
+/**
+ * Characters 3-12 of a GSTIN are the holder's PAN. When both are on file they
+ * must agree — if they do not, one of the two was typed from the wrong document.
+ */
+export const gstinMatchesPan = (gstin: string, pan: string): boolean =>
+  gstin.trim().toUpperCase().slice(2, 12) === pan.trim().toUpperCase();
+
+/**
+ * `maskAccount('123456784821') === 'XXXXXX4821'` — the last four digits are
+ * enough to recognise an account, and nothing else ever leaves the server
+ * except on the payment screen, where the read is audited.
+ */
+export function maskAccount(accountNumber: string | null | undefined): string | null {
+  if (!accountNumber) return null;
+  const value = accountNumber.trim();
+  if (value.length <= 4) return 'X'.repeat(value.length);
+  return 'X'.repeat(value.length - 4) + value.slice(-4);
+}

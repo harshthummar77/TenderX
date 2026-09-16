@@ -1,18 +1,34 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 /**
- * Load the right env file with Node's built-in loader — no dotenv dependency.
- * Real environments (Render, CI) inject variables directly and have no file.
+ * Load the right env file — no dotenv dependency.
  *
- * NODE_ENV=test loads server/.env.test, which points at the Neon `test` branch.
- * The suite truncates tables between files, so this one line is what stops
- * `npm test` from ever reaching `dev` or `main`.
+ * NODE_ENV=test loads `server/.env.test`, which points at the Neon `test`
+ * branch. Everything else loads `server/.env`. Real environments (Render, CI)
+ * inject variables directly and have no file at all.
+ *
+ * **The selected file wins over anything already in process.env**, and that is
+ * deliberate. `@prisma/client` runs its own dotenv loader when it is imported,
+ * so a module that imports `prisma` before this file would otherwise seed
+ * `DATABASE_URL` from plain `.env` — and a test run would quietly point at the
+ * `dev` branch, which the truncation guard would then refuse. Import order must
+ * not decide which database the suite talks to.
  */
 const envFileName = process.env.NODE_ENV === 'test' ? '../../.env.test' : '../../.env';
 const envFile = fileURLToPath(new URL(envFileName, import.meta.url));
-if (existsSync(envFile)) process.loadEnvFile(envFile);
+
+if (existsSync(envFile)) {
+  for (const line of readFileSync(envFile, 'utf8').split('\n')) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/i);
+    if (!match) continue;
+
+    const [, key, rawValue] = match;
+    const value = (rawValue ?? '').trim().replace(/^"(.*)"$/s, '$1').replace(/^'(.*)'$/s, '$1');
+    process.env[key as string] = value;
+  }
+}
 
 /**
  * The ONLY file in the codebase that reads process.env.

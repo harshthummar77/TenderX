@@ -5,11 +5,12 @@ import { categoryRoutes } from './modules/category/category.routes.js';
 import { invitationRoutes } from './modules/invitation/invitation.routes.js';
 import { organizationRoutes } from './modules/organization/organization.routes.js';
 import { platformRoutes } from './modules/platform/platform.routes.js';
+import { tenderRoutes } from './modules/tender/tender.routes.js';
 import { vendorRoutes } from './modules/vendor/vendor.routes.js';
 
 /**
  * Every feature route mounts here, and this router mounts at /api/v1.
- * Later plans add: tenders (07),
+ * Later plans add:
  * quotations (08), purchase-orders (10), deliveries (11), grns (11),
  * invoices (12), payments (13), documents + notifications + audit (14),
  * reports (15).
@@ -23,3 +24,4 @@ router.use(organizationRoutes);
 router.use(platformRoutes);
 router.use(vendorRoutes);
 router.use(categoryRoutes);
+router.use(tenderRoutes);

@@ -28,7 +28,11 @@ export const PO_TRANSITIONS: Record<PoStatus, PoStatus[]> = {
   ACCEPTED: ['CLOSED', 'CANCELLED'],
   REJECTED: ['ISSUED', 'CANCELLED'],
   CANCELLED: [],
-  CLOSED: [],
+  // ACCEPTED is the way back. The closure cascade in plan 13 is automatic, so
+  // its reversal has to be too: if the bank returns the payment that closed
+  // this order, the order reopens. Without it a returned payment would leave a
+  // CLOSED order with an unpaid invoice against it.
+  CLOSED: ['ACCEPTED'],
 };
 
 export function assertPoTransition(from: PoStatus, to: PoStatus): void {

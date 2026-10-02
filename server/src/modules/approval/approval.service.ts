@@ -126,6 +126,30 @@ export function registerInvoiceDecisionHook(hook: InvoiceDecisionHook | null): v
   invoiceDecisionHook = hook;
 }
 
+export interface PaymentDecisionContext {
+  paymentId: string;
+  decision: 'APPROVED' | 'REJECTED';
+  comment: string | null;
+  actor: AuditActor;
+  decidedById: string;
+}
+
+/**
+ * Plan 13 owns what a payment decision does, and registers it here — the same
+ * seam as the invoice hook above, for the same reason: `payment.service` imports
+ * this module for `createApprovalRequest`.
+ */
+export type PaymentDecisionHook = (
+  tx: Prisma.TransactionClient,
+  context: PaymentDecisionContext,
+) => Promise<void>;
+
+let paymentDecisionHook: PaymentDecisionHook | null = null;
+
+export function registerPaymentDecisionHook(hook: PaymentDecisionHook | null): void {
+  paymentDecisionHook = hook;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Create                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -621,12 +645,35 @@ export async function decideApproval(
         break;
       }
 
-      // Plan 13 owns this branch and the payment state machine.
-      case 'PAYMENT':
-        throw BusinessRule(
-          'approval.unsupported_entity',
-          `Deciding a ${approval.entityType} approval is not implemented yet`,
-        );
+      /*
+       * Plan 13 registers what a payment decision does. Approving authorises the
+       * release; it does not complete the payment, because completion needs the
+       * bank reference and that only exists once the money has moved.
+       */
+      case 'PAYMENT': {
+        if (!paymentDecisionHook) {
+          throw BusinessRule(
+            'approval.unsupported_entity',
+            'Payment approvals are not wired up in this build',
+          );
+        }
+        await paymentDecisionHook(tx, {
+          paymentId: approval.entityId,
+          decision: input.decision,
+          comment: input.comment ?? null,
+          actor: auditActorOf(actor, ctx),
+          decidedById: actor.userId,
+        });
+        notice = {
+          winnerUserIds: [],
+          loserUserIds: [],
+          requesterIds: [],
+          emails: [],
+          tenderTitle: `payment ${approval.entityId}`,
+          tenderId: approval.entityId,
+        };
+        break;
+      }
     }
 
     await writeAudit(tx, {

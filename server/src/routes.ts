@@ -11,6 +11,8 @@ import { installInvoiceDecisionHook } from './modules/invoice/invoice.service.js
 import { categoryRoutes } from './modules/category/category.routes.js';
 import { invitationRoutes } from './modules/invitation/invitation.routes.js';
 import { organizationRoutes } from './modules/organization/organization.routes.js';
+import { paymentRoutes } from './modules/payment/payment.routes.js';
+import { installPaymentDecisionHook } from './modules/payment/payment.service.js';
 import { platformRoutes } from './modules/platform/platform.routes.js';
 import { poRoutes } from './modules/purchase-order/po.routes.js';
 import { poVendorRoutes } from './modules/purchase-order/po.vendor.routes.js';
@@ -23,7 +25,7 @@ import { vendorRoutes } from './modules/vendor/vendor.routes.js';
 /**
  * Every feature route mounts here, and this router mounts at /api/v1.
  * Later plans add:
- * payments (13), documents + notifications + audit (14),
+ * documents + notifications + audit (14),
  * reports (15).
  */
 /**
@@ -38,6 +40,12 @@ installAwardHook();
  * decided by the same approval engine that decides tender awards.
  */
 installInvoiceDecisionHook();
+
+/**
+ * Plan 13 fills the last approval seam, so an above-threshold payment is
+ * authorised by a second admin before any money is released.
+ */
+installPaymentDecisionHook();
 
 export const router = Router();
 
@@ -59,3 +67,4 @@ router.use(grnRoutes);
 router.use(deliveryRoutes);
 router.use(invoiceRoutes);
 router.use(invoiceVendorRoutes);
+router.use(paymentRoutes);

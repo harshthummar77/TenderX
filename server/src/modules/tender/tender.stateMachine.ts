@@ -28,7 +28,10 @@ export const TENDER_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
   // would be cancelling the whole tender and re-running it from scratch.
   AWARDED: ['CLOSED', 'CANCELLED', 'UNDER_EVALUATION'],
   CANCELLED: [],
-  CLOSED: [],
+  // AWARDED is the way back, for the same reason the purchase order can reopen
+  // (plan 13 §6): a tender that closed because its last invoice was settled
+  // must reopen if that payment is returned.
+  CLOSED: ['AWARDED'],
 };
 
 export function assertTransition(from: TenderStatus, to: TenderStatus): void {
@@ -57,6 +60,8 @@ export interface TransitionMeta {
   action?: string;
   severity?: 'INFO' | 'NOTABLE' | 'SECURITY';
   reason?: string | null;
+  /** Extra audit context for this transition. */
+  after?: Record<string, unknown>;
 }
 
 /**
@@ -88,7 +93,11 @@ export async function transitionTender(
     organizationId: tender.organizationId,
     actor,
     before: { status: tender.status },
-    after: { status: to, ...(meta.reason ? { reason: meta.reason } : {}) },
+    after: {
+      status: to,
+      ...(meta.reason ? { reason: meta.reason } : {}),
+      ...(meta.after ?? {}),
+    },
   });
 
   return updated;

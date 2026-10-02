@@ -5,6 +5,9 @@ import { deliveryRoutes } from './modules/delivery/delivery.routes.js';
 import { evaluationRoutes } from './modules/evaluation/evaluation.routes.js';
 import { grnRoutes } from './modules/grn/grn.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
+import { invoiceRoutes } from './modules/invoice/invoice.routes.js';
+import { invoiceVendorRoutes } from './modules/invoice/invoice.vendor.routes.js';
+import { installInvoiceDecisionHook } from './modules/invoice/invoice.service.js';
 import { categoryRoutes } from './modules/category/category.routes.js';
 import { invitationRoutes } from './modules/invitation/invitation.routes.js';
 import { organizationRoutes } from './modules/organization/organization.routes.js';
@@ -20,7 +23,7 @@ import { vendorRoutes } from './modules/vendor/vendor.routes.js';
 /**
  * Every feature route mounts here, and this router mounts at /api/v1.
  * Later plans add:
- * invoices (12), payments (13), documents + notifications + audit (14),
+ * payments (13), documents + notifications + audit (14),
  * reports (15).
  */
 /**
@@ -29,6 +32,12 @@ import { vendorRoutes } from './modules/vendor/vendor.routes.js';
  * graph is assembled — not as an import side effect inside po.service itself.
  */
 installAwardHook();
+
+/**
+ * Plan 12 fills plan 09's invoice seam, so an above-threshold invoice is
+ * decided by the same approval engine that decides tender awards.
+ */
+installInvoiceDecisionHook();
 
 export const router = Router();
 
@@ -48,3 +57,5 @@ router.use(poRoutes);
 router.use(poVendorRoutes);
 router.use(grnRoutes);
 router.use(deliveryRoutes);
+router.use(invoiceRoutes);
+router.use(invoiceVendorRoutes);

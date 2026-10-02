@@ -14,3 +14,4 @@ export * from './quotation.js';
 export * from './evaluation.js';
 export * from './purchaseOrder.js';
 export * from './delivery.js';
+export * from './invoice.js';

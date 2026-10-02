@@ -48,16 +48,21 @@ export function assertDeliveryEditable(
   delivery: Pick<Delivery, 'status'>,
   grnCount: number,
 ): void {
-  if (delivery.status === 'CANCELLED' || delivery.status === 'DELIVERED') {
-    throw BusinessRule(
-      'delivery.not_editable',
-      `A ${delivery.status} delivery can no longer be changed`,
-    );
-  }
+  /*
+   * Receipt is checked first on purpose. A fully-receipted challan is also
+   * DELIVERED, and "already received" tells the vendor why it is frozen, where
+   * "not editable" only restates the status they can already see.
+   */
   if (grnCount > 0) {
     throw BusinessRule(
       'delivery.already_received',
       'This delivery has already been receipted and can no longer be changed',
+    );
+  }
+  if (delivery.status === 'CANCELLED' || delivery.status === 'DELIVERED') {
+    throw BusinessRule(
+      'delivery.not_editable',
+      `A ${delivery.status} delivery can no longer be changed`,
     );
   }
 }

@@ -96,6 +96,37 @@ export function registerAwardHook(hook: AwardHook | null): void {
 export const hasAwardHook = (): boolean => awardHook !== null;
 
 /* -------------------------------------------------------------------------- */
+/* The invoice seam (plan 12 §7)                                                */
+/* -------------------------------------------------------------------------- */
+
+export interface InvoiceDecisionContext {
+  invoiceId: string;
+  decision: 'APPROVED' | 'REJECTED';
+  comment: string | null;
+  actor: AuditActor;
+  decidedById: string;
+}
+
+/**
+ * Plan 12 owns what an invoice decision *does*, and registers it here.
+ *
+ * A hook rather than a direct import because `invoice.service` already imports
+ * this module for `createApprovalRequest`. Calling back the other way would make
+ * the two files a cycle; the seam keeps the dependency one-directional, exactly
+ * as the award hook does for plan 10.
+ */
+export type InvoiceDecisionHook = (
+  tx: Prisma.TransactionClient,
+  context: InvoiceDecisionContext,
+) => Promise<void>;
+
+let invoiceDecisionHook: InvoiceDecisionHook | null = null;
+
+export function registerInvoiceDecisionHook(hook: InvoiceDecisionHook | null): void {
+  invoiceDecisionHook = hook;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Create                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -559,10 +590,38 @@ export async function decideApproval(
             : await rejectAward(tx, approval, auditActorOf(actor, ctx), input.comment ?? '');
         break;
 
-      // Plans 12 and 13 own these branches and their state machines. Nothing
-      // creates such an approval yet; throwing keeps it loud rather than
-      // silently marking a request decided with no effect on its subject.
-      case 'INVOICE':
+      /*
+       * Plan 12 registers what an invoice decision does. The notice shape here
+       * is deliberately minimal: the hook owns the transition, the quantity
+       * release and the vendor notification, because those belong with the
+       * invoice rules rather than with the approval engine.
+       */
+      case 'INVOICE': {
+        if (!invoiceDecisionHook) {
+          throw BusinessRule(
+            'approval.unsupported_entity',
+            'Invoice approvals are not wired up in this build',
+          );
+        }
+        await invoiceDecisionHook(tx, {
+          invoiceId: approval.entityId,
+          decision: input.decision,
+          comment: input.comment ?? null,
+          actor: auditActorOf(actor, ctx),
+          decidedById: actor.userId,
+        });
+        notice = {
+          winnerUserIds: [],
+          loserUserIds: [],
+          requesterIds: [],
+          emails: [],
+          tenderTitle: `invoice ${approval.entityId}`,
+          tenderId: approval.entityId,
+        };
+        break;
+      }
+
+      // Plan 13 owns this branch and the payment state machine.
       case 'PAYMENT':
         throw BusinessRule(
           'approval.unsupported_entity',

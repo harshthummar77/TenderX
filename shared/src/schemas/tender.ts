@@ -269,12 +269,4 @@ export interface SuggestedVendor {
   reasons: string[];
 }
 
-export interface BidSummary {
-  invited: number;
-  viewed: number;
-  declined: number;
-  submitted: number;
-  /** Amounts stay sealed until the deadline — this endpoint never returns them. */
-  sealedUntil: string;
-  isOpen: boolean;
-}
+/** `BidSummary` lives with the sealed-bid module that owns it: schemas/quotation.ts. */

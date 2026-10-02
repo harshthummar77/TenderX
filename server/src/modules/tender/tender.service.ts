@@ -358,23 +358,7 @@ export async function closeBiddingEarly(actor: Actor, id: string, ctx: RefreshCo
   return loadTender(actor, id);
 }
 
-/** Counts only — never amounts. Bids stay sealed until `bidOpenedAt` (plan 08). */
-export async function bidSummary(actor: Actor, id: string) {
-  const tender = await loadTender(actor, id);
-
-  const [invited, viewed, declined, submitted] = await Promise.all([
-    prisma.tenderInvitation.count({ where: { tenderId: id } }),
-    prisma.tenderInvitation.count({ where: { tenderId: id, viewedAt: { not: null } } }),
-    prisma.tenderInvitation.count({ where: { tenderId: id, declinedReason: { not: null } } }),
-    prisma.quotation.count({ where: { tenderId: id, status: { not: 'DRAFT' } } }),
-  ]);
-
-  return {
-    invited,
-    viewed,
-    declined,
-    submitted,
-    sealedUntil: tender.bidSubmissionDeadline.toISOString(),
-    isOpen: tender.bidOpenedAt !== null,
-  };
-}
+/**
+ * `bidSummary` moved to the quotation module (plan 08 §3): it reads bids, so it
+ * belongs with the code that owns the seal.
+ */

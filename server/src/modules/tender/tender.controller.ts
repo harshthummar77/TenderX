@@ -77,10 +77,6 @@ export const closeBidding: RequestHandler = async (req, res) => {
   ok(res, await buyerDto(tender));
 };
 
-export const bidSummary: RequestHandler = async (req, res) => {
-  ok(res, await service.bidSummary(requireActor(req), req.params.id as string));
-};
-
 /* ------------------------------------------------------------- invitations */
 
 export const listInvitations: RequestHandler = async (req, res) => {

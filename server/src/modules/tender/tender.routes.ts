@@ -133,14 +133,10 @@ tenderRoutes.delete(
   controller.uninvite,
 );
 
-/** Counts only — amounts stay sealed until the deadline (plan 08). */
-tenderRoutes.get(
-  '/tenders/:id/bid-summary',
-  authenticate,
-  requirePermission(P.QUOTATION_VIEW_ALL),
-  validate({ params: idParamSchema }),
-  controller.bidSummary,
-);
+/**
+ * `/tenders/:id/bid-summary` lives in the quotation module (plan 08): it reads
+ * bids, so it belongs with the code that owns the seal.
+ */
 
 /* ------------------------------------------------------------------ vendor */
 

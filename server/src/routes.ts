@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { approvalRoutes } from './modules/approval/approval.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { deliveryRoutes } from './modules/delivery/delivery.routes.js';
 import { evaluationRoutes } from './modules/evaluation/evaluation.routes.js';
+import { grnRoutes } from './modules/grn/grn.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { categoryRoutes } from './modules/category/category.routes.js';
 import { invitationRoutes } from './modules/invitation/invitation.routes.js';
@@ -18,7 +20,6 @@ import { vendorRoutes } from './modules/vendor/vendor.routes.js';
 /**
  * Every feature route mounts here, and this router mounts at /api/v1.
  * Later plans add:
- * deliveries (11), grns (11),
  * invoices (12), payments (13), documents + notifications + audit (14),
  * reports (15).
  */
@@ -45,3 +46,5 @@ router.use(evaluationRoutes);
 router.use(approvalRoutes);
 router.use(poRoutes);
 router.use(poVendorRoutes);
+router.use(grnRoutes);
+router.use(deliveryRoutes);

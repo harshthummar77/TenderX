@@ -26,7 +26,11 @@ import { BusinessRule } from '../../lib/errors.js';
 export const QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
   DRAFT: ['SUBMITTED', 'WITHDRAWN'],
   SUBMITTED: ['WITHDRAWN', 'SHORTLISTED', 'REJECTED', 'LOST', 'AWARDED'],
-  SHORTLISTED: ['AWARDED', 'LOST', 'REJECTED'],
+  // SUBMITTED is the way back: when an admin rejects an award (09 §6), the
+  // shortlisted bid must rejoin the eligible pool. Leaving it SHORTLISTED would
+  // drop it out of the `status = 'SUBMITTED'` eligible set and silently skew
+  // every other bid's normalisation on the next recalculation.
+  SHORTLISTED: ['AWARDED', 'LOST', 'REJECTED', 'SUBMITTED'],
   WITHDRAWN: [],
   REJECTED: [],
   LOST: [],

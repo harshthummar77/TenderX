@@ -40,6 +40,7 @@ export const updateSettingsSchema = z
   .object({
     matchTolerancePercent: z.number().min(0).max(10).optional(),
     approvalThresholdAmount: z.number().min(0).optional(),
+    allowOfficerApproval: z.boolean().optional(),
     requireGrnBeforeInvoice: z.boolean().optional(),
     minVendorsPerTender: z.number().min(1).optional(),
     defaultPaymentTermDays: z.number().min(0).optional(),

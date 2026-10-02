@@ -11,6 +11,15 @@ export const orgSettingsSchema = z
     matchTolerancePercent: z.number().min(0).max(10).default(2),
     /** Above this value an award or invoice needs ORG_ADMIN approval (plan 09). */
     approvalThresholdAmount: z.number().min(0).default(50000),
+    /**
+     * Lets an award below `approvalThresholdAmount` clear without a second
+     * person (plan 09 §6). **Off by default, and deliberately so** — the whole
+     * point of the approval step is that somebody other than the requester
+     * signs off, and an organization that turns this on is choosing speed over
+     * that control. Even when enabled it never approves on the requester's
+     * behalf: the decision is recorded as a system decision, not theirs.
+     */
+    allowOfficerApproval: z.boolean().default(false),
     requireGrnBeforeInvoice: z.boolean().default(true),
     minVendorsPerTender: z.number().min(1).default(3),
     defaultPaymentTermDays: z.number().default(30),

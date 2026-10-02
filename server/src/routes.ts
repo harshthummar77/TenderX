@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { approvalRoutes } from './modules/approval/approval.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { evaluationRoutes } from './modules/evaluation/evaluation.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { categoryRoutes } from './modules/category/category.routes.js';
 import { invitationRoutes } from './modules/invitation/invitation.routes.js';
@@ -29,3 +31,5 @@ router.use(categoryRoutes);
 router.use(tenderRoutes);
 router.use(quotationRoutes);
 router.use(quotationBuyerRoutes);
+router.use(evaluationRoutes);
+router.use(approvalRoutes);

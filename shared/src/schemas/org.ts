@@ -23,6 +23,13 @@ export const orgSettingsSchema = z
     requireGrnBeforeInvoice: z.boolean().default(true),
     minVendorsPerTender: z.number().min(1).default(3),
     defaultPaymentTermDays: z.number().default(30),
+    /**
+     * Days a vendor is given to accept or reject a purchase order (plan 10 §5).
+     * Passing it does NOT auto-cancel the order — silently cancelling a contract
+     * because a supplier was slow is wrong. The order is flagged and both sides
+     * are told; the buyer decides.
+     */
+    expectedResponseDays: z.number().min(1).max(60).default(3),
     defaultTaxRatePercent: z.number().default(18),
     /** Document number prefixes, per sequence type (plan 07). */
     numberPrefixes: z

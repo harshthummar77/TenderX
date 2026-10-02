@@ -33,8 +33,13 @@ export const QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> =
   SHORTLISTED: ['AWARDED', 'LOST', 'REJECTED', 'SUBMITTED'],
   WITHDRAWN: [],
   REJECTED: [],
-  LOST: [],
-  AWARDED: [],
+  // SUBMITTED is the way back for a losing bid: if the winner backs out and
+  // the buyer re-awards (plan 10 §5), the rest of the field rejoins the
+  // eligible set so the runner-up can be scored against it again.
+  LOST: ['SUBMITTED'],
+  // REJECTED is where a winner who backed out ends up — the award happened,
+  // so the bid cannot return to the pool, but it must stop being the winner.
+  AWARDED: ['REJECTED'],
 };
 
 export function assertQuotationTransition(from: QuotationStatus, to: QuotationStatus): void {

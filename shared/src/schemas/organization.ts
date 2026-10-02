@@ -44,6 +44,7 @@ export const updateSettingsSchema = z
     requireGrnBeforeInvoice: z.boolean().optional(),
     minVendorsPerTender: z.number().min(1).optional(),
     defaultPaymentTermDays: z.number().min(0).optional(),
+    expectedResponseDays: z.number().min(1).max(60).optional(),
     defaultTaxRatePercent: z.number().min(0).max(28).optional(),
     numberPrefixes: z
       .object({

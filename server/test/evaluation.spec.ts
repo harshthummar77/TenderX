@@ -5,6 +5,7 @@ import { prisma } from '../src/lib/prisma.js';
 import { clearOrgCache } from '../src/middleware/requireActiveOrg.js';
 import { clearVendorCache } from '../src/middleware/requireApprovedVendor.js';
 import { registerAwardHook } from '../src/modules/approval/approval.service.js';
+import { installAwardHook } from '../src/modules/purchase-order/po.service.js';
 import { comparisonToCsv } from '../src/modules/evaluation/export.service.js';
 import {
   bidFixture,
@@ -48,7 +49,10 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  registerAwardHook(null);
+  // Put the real hook back rather than clearing it: plan 10 registers purchase
+  // order generation on this seam, and leaving it null would quietly change what
+  // the rest of this file is exercising.
+  installAwardHook();
 });
 
 afterAll(async () => {

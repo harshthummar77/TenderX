@@ -22,7 +22,11 @@ export const TENDER_TRANSITIONS: Record<TenderStatus, TenderStatus[]> = {
   BIDDING_CLOSED: ['UNDER_EVALUATION', 'CANCELLED'],
   UNDER_EVALUATION: ['PENDING_APPROVAL', 'CANCELLED'],
   PENDING_APPROVAL: ['AWARDED', 'UNDER_EVALUATION', 'CANCELLED'],
-  AWARDED: ['CLOSED', 'CANCELLED'],
+  // UNDER_EVALUATION is the way back: when a winning vendor backs out and the
+  // buyer cancels the purchase order (plan 10 §5), the tender returns to
+  // evaluation so the runner-up can be awarded. Without it the only options
+  // would be cancelling the whole tender and re-running it from scratch.
+  AWARDED: ['CLOSED', 'CANCELLED', 'UNDER_EVALUATION'],
   CANCELLED: [],
   CLOSED: [],
 };

@@ -12,3 +12,4 @@ export * from './vendor.js';
 export * from './tender.js';
 export * from './quotation.js';
 export * from './evaluation.js';
+export * from './purchaseOrder.js';

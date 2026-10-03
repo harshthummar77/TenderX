@@ -1,51 +1,35 @@
-import { useEffect, useState } from 'react';
-import { SHARED_PACKAGE_VERSION, formatMoney, type ApiResponse, type HealthPayload } from '@tb/shared';
+import { useEffect } from 'react';
+import { RouterProvider } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { bootstrapSession } from '@/lib/session';
+import { router } from '@/router';
+import { selectStatus, useAuthStore } from '@/stores/authStore';
+import { FullPageSpinner } from '@/components/ui/spinner';
+import { Toaster } from '@/components/ui/toast';
 
 /**
- * Plan 01 smoke screen: proves the Vite dev proxy reaches the API and that the
- * client can import the compiled @tb/shared package. Plan 16 replaces it with
- * the real shell (router, TanStack Query, design system).
+ * The boot gate (plan 16 §3).
+ *
+ * The routes are not rendered until the one `POST /auth/refresh` has settled. That
+ * ordering is the whole trick behind "hard-refresh and you are still signed in,
+ * with no flash of the login screen": the access token lives only in memory, so
+ * immediately after a reload the app does not yet know who the user is — and a
+ * router rendered in that moment would send them to /login before the answer
+ * arrived.
  */
 export function App() {
-  const [health, setHealth] = useState<HealthPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const status = useAuthStore(selectStatus);
 
   useEffect(() => {
-    fetch('/api/v1/health')
-      .then((res) => res.json() as Promise<ApiResponse<HealthPayload>>)
-      .then((body) => {
-        if (body.success) setHealth(body.data);
-        else setError(`${body.error.code}: ${body.error.message}`);
-      })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Request failed'));
+    void bootstrapSession();
   }, []);
 
   return (
-    <main className="app">
-      <h1>TenderBridge</h1>
-      <p>Source-to-pay procurement platform</p>
-
-      <section>
-        <h2>API</h2>
-        {error && <p role="alert">API unreachable — {error}</p>}
-        {!error && !health && <p>Checking…</p>}
-        {health && (
-          <dl>
-            <dt>status</dt>
-            <dd>{health.status}</dd>
-            <dt>version</dt>
-            <dd>{health.version}</dd>
-            <dt>uptime</dt>
-            <dd>{health.uptime}s</dd>
-          </dl>
-        )}
-      </section>
-
-      <footer>
-        <small>
-          @tb/shared v{SHARED_PACKAGE_VERSION} · sample amount {formatMoney('125000')}
-        </small>
-      </footer>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      {status === 'loading' ? <FullPageSpinner /> : <RouterProvider router={router} />}
+      {/* Outside the router, so a toast survives a navigation. */}
+      <Toaster />
+    </QueryClientProvider>
   );
 }

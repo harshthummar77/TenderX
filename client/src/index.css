@@ -1,30 +1,120 @@
-/* Placeholder styling only. Plan 16 replaces this with Tailwind 4 + the design system. */
-:root {
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  line-height: 1.5;
-  color-scheme: light dark;
+@import 'tailwindcss';
+
+/* ==========================================================================
+   TenderBridge design tokens (plan 16 §4)
+
+   "Instrument panel", not "marketing site": this is software someone uses for
+   six hours a day. Dense tables, calm colours, strong status semantics.
+
+   One rule makes dark mode a token swap instead of a rewrite: NEVER write a
+   literal colour in a component. No `bg-white`, no `text-gray-500`, no
+   `#1f2937`. Every colour below has a utility (`bg-surface`, `text-muted`,
+   `border-border`, `bg-primary`), and every one of them is redefined once in
+   the dark block at the bottom of this file.
+   ========================================================================== */
+
+@theme {
+  --color-bg: oklch(99% 0.002 250);
+  --color-surface: oklch(100% 0 0);
+  /* Table headers, hovered rows, inset panels — one step off the surface. */
+  --color-subtle: oklch(97% 0.003 250);
+  --color-border: oklch(92% 0.004 250);
+  /* A heavier rule for sticky-header undersides and table footers. */
+  --color-border-strong: oklch(86% 0.006 250);
+  --color-text: oklch(25% 0.01 250);
+  --color-muted: oklch(55% 0.012 250);
+
+  --color-primary: oklch(52% 0.16 250); /* actions */
+  --color-primary-hover: oklch(46% 0.16 250);
+  --color-on-primary: oklch(100% 0 0);
+
+  --color-success: oklch(62% 0.14 150); /* approved, paid, matched */
+  --color-warning: oklch(72% 0.15 75); /* pending, closing soon */
+  --color-danger: oklch(58% 0.19 25); /* rejected, exception, overdue */
+  --color-danger-hover: oklch(52% 0.19 25);
+  --color-info: oklch(60% 0.1 230); /* draft, informational */
+
+  --color-ring: oklch(52% 0.16 250 / 45%);
+
+  --font-sans: 'Inter var', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-body {
-  margin: 0;
-  padding: 2rem;
+/* Tailwind 4 borders default to currentColor; the design system wants the
+   border token everywhere unless a component says otherwise. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 0.875rem; /* 14px — dense by default, this is a back office */
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every monetary and quantity figure is mono + tabular + right aligned.
+     Columns of rupee figures that do not line up read as amateur (§4). */
+  .numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* The native date picker indicator is invisible on a dark surface. */
+  @media (prefers-color-scheme: dark) {
+    ::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+  }
 }
 
-.app {
-  max-width: 40rem;
-  margin: 0 auto;
+/* Dark mode is the same tokens with different values — nothing else changes. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: oklch(19% 0.012 255);
+    --color-surface: oklch(23% 0.014 255);
+    --color-subtle: oklch(27% 0.016 255);
+    --color-border: oklch(32% 0.016 255);
+    --color-border-strong: oklch(40% 0.018 255);
+    --color-text: oklch(95% 0.005 255);
+    --color-muted: oklch(70% 0.014 255);
+
+    --color-primary: oklch(66% 0.15 250);
+    --color-primary-hover: oklch(72% 0.15 250);
+    --color-on-primary: oklch(20% 0.015 255);
+
+    --color-success: oklch(70% 0.14 150);
+    --color-warning: oklch(79% 0.15 75);
+    --color-danger: oklch(68% 0.18 25);
+    --color-danger-hover: oklch(73% 0.18 25);
+    --color-info: oklch(70% 0.1 230);
+
+    --color-ring: oklch(66% 0.15 250 / 50%);
+  }
 }
 
-dl {
-  display: grid;
-  grid-template-columns: 8rem 1fr;
-  gap: 0.25rem 1rem;
-}
-
-dt {
-  font-weight: 600;
-}
-
-dd {
-  margin: 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

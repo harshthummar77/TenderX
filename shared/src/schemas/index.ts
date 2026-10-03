@@ -17,3 +17,4 @@ export * from './delivery.js';
 export * from './invoice.js';
 export * from './payment.js';
 export * from './document.js';
+export * from './report.js';

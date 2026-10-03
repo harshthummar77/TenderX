@@ -3,6 +3,7 @@ import { isTest } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { remindAwaitingResponse } from '../modules/purchase-order/po.service.js';
 import { runEmailRetrySweep } from './retryEmails.job.js';
+import { runVendorStatsSweep } from './refreshVendorStats.job.js';
 import { runDeadlineSweep } from '../modules/tender/deadline.service.js';
 
 /**
@@ -49,6 +50,18 @@ export function registerJobs(): void {
   tasks.push(
     cron.schedule(EVERY_15_MINUTES, () => {
       void runEmailRetrySweep();
+    }),
+  );
+
+  /*
+   * The vendor-performance feedback loop (plan 15 §4). On the same tick, but
+   * guarded to do real work once a day: ratings move on the timescale of
+   * deliveries, and recomputing every scorecard each quarter-hour would keep the
+   * compute awake for nothing.
+   */
+  tasks.push(
+    cron.schedule(EVERY_15_MINUTES, () => {
+      void runVendorStatsSweep();
     }),
   );
 

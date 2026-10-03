@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { activityRoutes } from './modules/activity/activity.routes.js';
 import { approvalRoutes } from './modules/approval/approval.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
 import { deliveryRoutes } from './modules/delivery/delivery.routes.js';
 import { documentRoutes } from './modules/document/document.routes.js';
 import { evaluationRoutes } from './modules/evaluation/evaluation.routes.js';
@@ -20,6 +21,7 @@ import { platformRoutes } from './modules/platform/platform.routes.js';
 import { poRoutes } from './modules/purchase-order/po.routes.js';
 import { poVendorRoutes } from './modules/purchase-order/po.vendor.routes.js';
 import { installAwardHook } from './modules/purchase-order/po.service.js';
+import { reportRoutes } from './modules/report/report.routes.js';
 import { quotationBuyerRoutes } from './modules/quotation/quotation.buyer.routes.js';
 import { quotationRoutes } from './modules/quotation/quotation.routes.js';
 import { tenderRoutes } from './modules/tender/tender.routes.js';
@@ -27,8 +29,7 @@ import { vendorRoutes } from './modules/vendor/vendor.routes.js';
 
 /**
  * Every feature route mounts here, and this router mounts at /api/v1.
- * Later plans add:
- * reports (15).
+ * Every backend plan is represented: auth (03) through reports (15).
  */
 /**
  * Plan 10 fills plan 09's award seam: approving an award generates the purchase
@@ -73,3 +74,5 @@ router.use(paymentRoutes);
 router.use(documentRoutes);
 router.use(notificationRoutes);
 router.use(activityRoutes);
+router.use(dashboardRoutes);
+router.use(reportRoutes);

@@ -72,6 +72,56 @@ const canonical = (input: AuditInput, previousHash: string | null, createdAt: st
     previousHash,
   ]);
 
+/* -------------------------------------------------------------------------- */
+/* Redaction                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Fields that must never reach `before` / `after` (plan 14 §C2).
+ *
+ * **A leak in the audit table is worse than one in the logs**, because the audit
+ * table is permanent: two CREATE RULE statements stop the application deleting
+ * from it, so a secret written here cannot be taken back out. Matching is on the
+ * key name, case-insensitively, at every depth.
+ */
+const REDACTED_KEYS = [
+  'password',
+  'passwordhash',
+  'tokenhash',
+  'resettokenhash',
+  'refreshtoken',
+  'accesstoken',
+  'bankaccountnumber',
+  'secret',
+  'apikey',
+  'authorization',
+];
+
+export const REDACTED = '[redacted]';
+
+const shouldRedact = (key: string): boolean => {
+  const lower = key.toLowerCase();
+  return REDACTED_KEYS.some((needle) => lower.includes(needle));
+};
+
+/**
+ * Deep-copy a value with every sensitive key replaced.
+ *
+ * Keeps the key so the diff still shows that the field changed — "the bank
+ * account was edited" is exactly what an auditor needs, and the new value is
+ * exactly what they must not be handed.
+ */
+export function redact<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => redact(item)) as unknown as T;
+
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = shouldRedact(key) ? REDACTED : redact(child);
+  }
+  return out as T;
+}
+
 /**
  * Serialises chain writes for the length of the transaction. Two concurrent
  * writers reading the same `previousHash` would fork the chain, and a forked
@@ -89,24 +139,34 @@ export async function writeAudit(tx: Prisma.TransactionClient, input: AuditInput
   const previousHash = previous?.hash ?? null;
 
   const createdAt = new Date();
-  const hash = sha256(canonical(input, previousHash, createdAt.toISOString()));
+
+  // Redacted BEFORE hashing, so the stored hash covers what was actually
+  // stored. Hashing the raw object and storing a redacted one would make every
+  // verification fail on an untampered chain.
+  const safe: AuditInput = {
+    ...input,
+    before: input.before === null || input.before === undefined ? input.before : redact(input.before),
+    after: input.after === null || input.after === undefined ? input.after : redact(input.after),
+  };
+
+  const hash = sha256(canonical(safe, previousHash, createdAt.toISOString()));
 
   return tx.activityLog.create({
     data: {
-      action: input.action,
-      entityType: input.entityType,
-      entityId: input.entityId ?? null,
-      summary: input.summary,
-      severity: input.severity ?? 'INFO',
-      organizationId: input.organizationId ?? null,
-      vendorId: input.vendorId ?? null,
-      actorId: input.actor?.userId ?? null,
-      actorEmail: input.actor?.email ?? null,
-      actorRole: input.actor?.role ?? null,
-      ipAddress: input.actor?.ipAddress ?? null,
-      userAgent: input.actor?.userAgent ?? null,
-      before: input.before ?? undefined,
-      after: input.after ?? undefined,
+      action: safe.action,
+      entityType: safe.entityType,
+      entityId: safe.entityId ?? null,
+      summary: safe.summary,
+      severity: safe.severity ?? 'INFO',
+      organizationId: safe.organizationId ?? null,
+      vendorId: safe.vendorId ?? null,
+      actorId: safe.actor?.userId ?? null,
+      actorEmail: safe.actor?.email ?? null,
+      actorRole: safe.actor?.role ?? null,
+      ipAddress: safe.actor?.ipAddress ?? null,
+      userAgent: safe.actor?.userAgent ?? null,
+      before: safe.before ?? undefined,
+      after: safe.after ?? undefined,
       hash,
       previousHash,
       createdAt,

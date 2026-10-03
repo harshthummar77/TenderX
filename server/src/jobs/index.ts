@@ -2,6 +2,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import { isTest } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { remindAwaitingResponse } from '../modules/purchase-order/po.service.js';
+import { runEmailRetrySweep } from './retryEmails.job.js';
 import { runDeadlineSweep } from '../modules/tender/deadline.service.js';
 
 /**
@@ -38,6 +39,16 @@ export function registerJobs(): void {
       void remindAwaitingResponse().catch((err) =>
         logger.error({ err }, 'Purchase order response sweep failed'),
       );
+    }),
+  );
+
+  /*
+   * Notification emails that failed, retried on the SAME tick (plan 14 §B1).
+   * One timer for all three sweeps keeps the database asleep between ticks.
+   */
+  tasks.push(
+    cron.schedule(EVERY_15_MINUTES, () => {
+      void runEmailRetrySweep();
     }),
   );
 

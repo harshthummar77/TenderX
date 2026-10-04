@@ -75,7 +75,7 @@ export const toast = {
     const apiError = toApiError(error);
     const fieldCount = Object.keys(apiError.fieldErrors).length;
     const description = fieldCount
-      ? `${fieldCount} field${fieldCount > 1 ? 's' : ''} need attention.`
+      ? `${fieldCount} ${fieldCount === 1 ? 'field needs' : 'fields need'} attention.`
       : apiError.requestId
         ? `Reference ${apiError.requestId}`
         : undefined;

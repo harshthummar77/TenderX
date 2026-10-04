@@ -22,7 +22,7 @@ import { formatCount } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Dropdown } from '@/components/ui/dropdown';
 import { Select } from '@/components/ui/select';
-import { SkeletonRows } from '@/components/ui/skeleton';
+import { Skeleton, SkeletonRows } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { TBody, THead, TH, TD, TR, Table } from '@/components/ui/table';
 import { EmptyState } from '@/components/data/EmptyState';
@@ -70,6 +70,8 @@ export interface DataTableProps<T> {
   stickyHeader?: boolean;
   /** Off for a short embedded table where the gear icon is noise. */
   columnVisibility?: boolean;
+  /** Stacked cards below `md`. Off for a table that is already narrow. */
+  mobileCards?: boolean;
   /** Rendered in the footer's left side: bulk actions, a totals line. */
   footerSlot?: ReactNode;
   className?: string;
@@ -101,6 +103,7 @@ export function DataTable<T>({
   emptyState,
   stickyHeader = true,
   columnVisibility = true,
+  mobileCards = true,
   footerSlot,
   className,
 }: DataTableProps<T>) {
@@ -203,7 +206,78 @@ export function DataTable<T>({
         </div>
       )}
 
-      <Table>
+      {/* Phone layout: one stacked card per row (plan 17 §8). A vendor checking
+          an order on a 390 px screen gets labelled values instead of a
+          seven-column grid they have to scroll sideways through. */}
+      {mobileCards && (
+        <div className="divide-y divide-border md:hidden">
+          {isLoading &&
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="space-y-2 p-3">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            ))}
+
+          {!isLoading && rows.length === 0 && (
+            <div>
+              {emptyState ?? (
+                <EmptyState title="Nothing here yet" message="No rows match this view." />
+              )}
+            </div>
+          )}
+
+          {!isLoading &&
+            table.getRowModel().rows.map((row) => (
+              <button
+                key={row.id}
+                type="button"
+                disabled={!onRowClick}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                className={cn(
+                  'block w-full px-3 py-3 text-left',
+                  onRowClick && 'hover:bg-subtle',
+                  rowClassName?.(row.original),
+                )}
+              >
+                <dl className="space-y-1">
+                  {row.getVisibleCells().map((cell, index) => {
+                    const header = cell.column.columnDef.header;
+                    const label =
+                      cell.column.columnDef.meta?.label ??
+                      (typeof header === 'string' ? header : cell.column.id);
+
+                    // The first column is the row's identity, so it leads
+                    // without a label, the way a card title does.
+                    if (index === 0) {
+                      return (
+                        <dd key={cell.id} className="text-sm font-medium">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </dd>
+                      );
+                    }
+
+                    return (
+                      <div key={cell.id} className="flex items-baseline justify-between gap-3">
+                        <dt className="text-xs text-muted">{label}</dt>
+                        <dd
+                          className={cn(
+                            'min-w-0 text-xs',
+                            cell.column.columnDef.meta?.numeric && 'numeric',
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </button>
+            ))}
+        </div>
+      )}
+
+      <Table className={cn(mobileCards && 'hidden md:table')}>
         <THead sticky={stickyHeader}>
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id}>

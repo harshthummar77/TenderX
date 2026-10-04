@@ -83,13 +83,22 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 export function ButtonLink({
   variant = 'primary',
   size = 'md',
+  leftIcon,
+  rightIcon,
   className,
   children,
   ...props
-}: LinkProps & { variant?: ButtonVariant; size?: ButtonSize }) {
+}: LinkProps & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+}) {
   return (
     <Link className={buttonClass(variant, size, className)} {...props}>
+      {leftIcon}
       {children}
+      {rightIcon}
     </Link>
   );
 }

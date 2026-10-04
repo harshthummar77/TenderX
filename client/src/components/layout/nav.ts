@@ -12,7 +12,7 @@ import {
   Settings,
   ShieldCheck,
   Store,
-  Truck,
+  Users,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -45,7 +45,6 @@ export interface NavSection {
 }
 
 const DASHBOARD: NavItem = { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard };
-const SETTINGS: NavItem = { label: 'Settings', to: '/settings', icon: Settings };
 
 const BUYER: NavSection[] = [
   {
@@ -76,7 +75,19 @@ const BUYER: NavSection[] = [
     items: [
       { label: 'Reports', to: '/reports', icon: FileText, permission: P.REPORT_VIEW },
       { label: 'Activity', to: '/activity', icon: ScrollText, permission: P.AUDIT_VIEW },
-      SETTINGS,
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [
+      { label: 'Organization', to: '/settings/organization', icon: Building2, permission: P.ORG_VIEW },
+      {
+        label: 'Members',
+        to: '/settings/members',
+        icon: Users,
+        permission: P.ORG_MEMBER_MANAGE,
+      },
+      { label: 'My profile', to: '/settings/profile', icon: Settings },
     ],
   },
 ];
@@ -103,7 +114,6 @@ const VENDOR: NavSection[] = [
         icon: ClipboardList,
         permission: P.PO_VIEW,
       },
-      { label: 'Deliveries', to: '/vendor/deliveries', icon: Truck, permission: P.DELIVERY_CREATE },
     ],
   },
   {
@@ -113,7 +123,18 @@ const VENDOR: NavSection[] = [
       { label: 'Payments', to: '/vendor/payments', icon: Wallet, permission: P.PAYMENT_VIEW },
     ],
   },
-  { items: [SETTINGS] },
+  {
+    label: 'Settings',
+    items: [
+      {
+        label: 'My company',
+        to: '/settings/vendor',
+        icon: Store,
+        permission: P.VENDOR_UPDATE_SELF,
+      },
+      { label: 'My profile', to: '/settings/profile', icon: Settings },
+    ],
+  },
 ];
 
 const PLATFORM: NavSection[] = [
@@ -126,7 +147,7 @@ const PLATFORM: NavSection[] = [
         icon: Building2,
         permission: P.ORG_APPROVE,
       },
-      { label: 'Vendors', to: '/vendors', icon: Store, permission: P.VENDOR_VIEW },
+      { label: 'Vendors', to: '/platform/vendors', icon: Store, permission: P.VENDOR_VIEW },
       { label: 'Tenders', to: '/tenders', icon: Gavel, permission: P.TENDER_VIEW },
     ],
   },
@@ -139,7 +160,7 @@ const PLATFORM: NavSection[] = [
         icon: ShieldCheck,
         permission: P.AUDIT_VIEW,
       },
-      SETTINGS,
+      { label: 'My profile', to: '/settings/profile', icon: Settings },
     ],
   },
 ];

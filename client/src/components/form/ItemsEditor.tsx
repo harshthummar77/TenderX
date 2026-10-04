@@ -55,6 +55,11 @@ export interface ItemsEditorProps {
   maxRows?: number;
   /** `{ '0.rate': 'Required' }`, keyed by row index then field — matches the server's paths. */
   errors?: Record<string, string>;
+  /**
+   * The rate column's header. A tender's rate is the buyer's internal estimate,
+   * not a price anybody is offering, and labelling it "Rate" there would be a lie.
+   */
+  rateLabel?: string;
   className?: string;
 }
 
@@ -90,6 +95,7 @@ export function ItemsEditor({
   disabled = false,
   maxRows = 200,
   errors = {},
+  rateLabel = 'Rate',
   className,
 }: ItemsEditorProps) {
   /** Column order drives the paste mapping, so it is derived once, here. */
@@ -226,7 +232,7 @@ export function ItemsEditor({
               </th>
               {showRate && (
                 <th scope="col" className="w-36 px-2 py-2 text-right font-medium">
-                  Rate
+                  {rateLabel}
                 </th>
               )}
               {showTax && showRate && (

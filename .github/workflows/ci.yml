@@ -1,0 +1,49 @@
+name: ci
+
+# One workflow, the steps from plan 18 §6. No coverage gates, no custom lint
+# rules (00 §3) — `check:conventions` replaces those.
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Store these as repository secrets pointing at the Neon `test` branch ONLY.
+    # Never at main's database: the suite truncates every table between files.
+    env:
+      DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.TEST_DIRECT_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `allowScripts` in package.json blocks lifecycle scripts, so Prisma's
+      # client is generated as its own step rather than on install.
+      - run: npm ci
+      - run: npx prisma generate --schema server/prisma/schema
+
+      # The three greps that replace the cut ESLint rules. First, because it is
+      # the fastest thing that can fail.
+      - run: npm run check:conventions
+      - run: npm run typecheck
+      - run: npm run lint
+
+      # No database. Runs even on a fork where the Neon secrets are absent.
+      - run: npm run test:unit
+
+      # There is no .env.test in the repo (.gitignore excludes it), so the test
+      # run reads DATABASE_URL/DIRECT_URL from the job env above.
+      - run: npx prisma migrate deploy --schema server/prisma/schema
+        if: env.DATABASE_URL != ''
+
+      - run: npm run test:integration
+        if: env.DATABASE_URL != ''
+        env:
+          NODE_ENV: test
+
+      - run: npm run build

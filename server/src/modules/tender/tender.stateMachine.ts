@@ -1,7 +1,7 @@
 import type { Prisma, Tender } from '@prisma/client';
 import type { TenderStatus } from '@tb/shared';
 import { writeAudit, type AuditActor } from '../../lib/audit.js';
-import { BusinessRule } from '../../lib/errors.js';
+import { BusinessRule, NotFound } from '../../lib/errors.js';
 
 /**
  * The tender state machine.
@@ -75,7 +75,19 @@ export async function transitionTender(
   actor: AuditActor,
   meta: TransitionMeta = {},
 ): Promise<Tender> {
-  assertTransition(tender.status, to);
+  /*
+   * Lock the row first, then re-check the status against what the lock returns
+   * — the same pattern POs, invoices, payments and approvals already use.
+   *
+   * Without it, two concurrent publishes both read DRAFT, both pass the assert
+   * and both reserve a reference number: one tender, two numbers, and a gap in
+   * a sequence that is supposed to be gapless (18 §4).
+   */
+  const [locked] = await tx.$queryRaw<{ status: TenderStatus }[]>`
+    SELECT status FROM tenders WHERE id = ${tender.id}::uuid FOR UPDATE`;
+  if (!locked) throw NotFound('Tender');
+
+  assertTransition(locked.status, to);
 
   const updated = await tx.tender.update({
     where: { id: tender.id },

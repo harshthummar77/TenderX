@@ -26,6 +26,8 @@ import { quotationBuyerRoutes } from './modules/quotation/quotation.buyer.routes
 import { quotationRoutes } from './modules/quotation/quotation.routes.js';
 import { tenderRoutes } from './modules/tender/tender.routes.js';
 import { vendorRoutes } from './modules/vendor/vendor.routes.js';
+import { isTest } from './config/env.js';
+import { testRoutes } from './modules/_test/test.routes.js';
 
 /**
  * Every feature route mounts here, and this router mounts at /api/v1.
@@ -76,3 +78,9 @@ router.use(notificationRoutes);
 router.use(activityRoutes);
 router.use(dashboardRoutes);
 router.use(reportRoutes);
+
+/**
+ * The clock and job controls a browser test needs (plan 18 §5). Mounted only
+ * under test, and the router guards itself as well.
+ */
+if (isTest) router.use(testRoutes);

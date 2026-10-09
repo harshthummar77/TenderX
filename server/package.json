@@ -16,7 +16,10 @@
     "test": "vitest run",
     "db:deploy:test": "node scripts/prisma-env.mjs .env.test migrate deploy",
     "db:status:test": "node scripts/prisma-env.mjs .env.test migrate status",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "check:conventions": "node scripts/check-conventions.mjs"
   },
   "prisma": {
     "schema": "prisma/schema",

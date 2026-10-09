@@ -3,7 +3,7 @@ import type { CreateTenderInput, TenderQuery, UpdateTenderInput } from '@tb/shar
 import { writeAudit, type AuditActor } from '../../lib/audit.js';
 import { BusinessRule, NotFound } from '../../lib/errors.js';
 import { emailAfterCommit, notifyMany } from '../../lib/notify.js';
-import { nextNumber } from '../../lib/numbering.js';
+import { draftReference, nextNumber } from '../../lib/numbering.js';
 import { prisma } from '../../lib/prisma.js';
 import { scopeToOrg } from '../../lib/scope.js';
 import type { Actor } from '../../middleware/authenticate.js';
@@ -107,7 +107,7 @@ export async function createTender(actor: Actor, input: CreateTenderInput, ctx: 
     const tender = await tx.tender.create({
       data: {
         organizationId: actor.organizationId!,
-        referenceNumber: '',
+        referenceNumber: draftReference(),
         title: input.title,
         description: input.description,
         categoryId: input.categoryId ?? null,

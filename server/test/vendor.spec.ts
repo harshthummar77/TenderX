@@ -547,8 +547,15 @@ describe('self-service', () => {
       orderBy: { sequence: 'desc' },
     });
 
-    expect(JSON.stringify(audit?.after)).toContain('[changed]');
-    expect(JSON.stringify(audit?.after)).not.toContain('99887766554433');
+    /*
+     * The rule is that the number never reaches the log — not which placeholder
+     * stands in for it. The service writes `[changed]` and `lib/audit` then
+     * redacts anything bank-shaped to `[redacted]` before hashing, so asserting
+     * one spelling made this test fail on behaviour that is strictly safer.
+     */
+    const after = JSON.stringify(audit?.after);
+    expect(after).not.toContain('99887766554433');
+    expect(after).toMatch(/\[(changed|redacted)\]/);
   });
 
   it('one vendor cannot read another vendor through /vendors/me', async () => {

@@ -25,7 +25,10 @@
     "db:seed": "npm run db:seed -w server",
     "test": "npm run test -w server",
     "typecheck": "npm run build:shared && tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:unit": "npm run test:unit -w server",
+    "test:integration": "npm run test:integration -w server",
+    "check:conventions": "npm run check:conventions -w server"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

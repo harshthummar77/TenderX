@@ -183,7 +183,7 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         <Menu className="size-4" />
       </Button>
 
-      <span className="text-sm font-semibold tracking-tight text-text">TenderBridge</span>
+      <span className="text-sm font-semibold tracking-tight text-text">TenderX</span>
 
       {partyName && (
         <Badge tone="primary" size="md" className="hidden sm:inline-flex">

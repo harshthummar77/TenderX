@@ -9,6 +9,19 @@ import { fiscalYear, type DocSequenceType } from '@tb/shared';
  * same time).
  */
 
+/**
+ * A draft has no number yet, but `Tender` carries a unique
+ * `(organizationId, referenceNumber)` index — so a shared placeholder like `''`
+ * lets an organization hold exactly one draft and 409s on the second. Each
+ * draft therefore gets its own placeholder, and the serializers render it as
+ * `null`. A partial unique index would be tidier; that needs a migration.
+ */
+export const draftReference = (): string =>
+  `DRAFT/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+export const isDraftReference = (reference: string | null | undefined): boolean =>
+  !reference || reference.startsWith('DRAFT/');
+
 export const DEFAULT_PREFIX: Record<DocSequenceType, string> = {
   TENDER: 'TND',
   QUOTATION: 'QTN',

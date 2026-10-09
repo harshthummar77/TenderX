@@ -1,3 +1,4 @@
+import { isDraftReference } from '../../lib/numbering.js';
 import type { Category, Organization, Quotation, Tender, TenderInvitation, TenderItem } from '@prisma/client';
 import type {
   Criterion,
@@ -63,7 +64,7 @@ export const toTenderBuyerDto = (
   counts: { invitations: number; viewed: number; quotations: number },
 ): TenderBuyerDto => ({
   id: tender.id,
-  referenceNumber: tender.referenceNumber || null,
+  referenceNumber: isDraftReference(tender.referenceNumber) ? null : tender.referenceNumber,
   title: tender.title,
   description: tender.description,
   category: tender.category ? { id: tender.category.id, name: tender.category.name } : null,
@@ -97,7 +98,7 @@ export const toTenderVendorDto = (
   },
 ): TenderVendorDto => ({
   id: tender.id,
-  referenceNumber: tender.referenceNumber || null,
+  referenceNumber: isDraftReference(tender.referenceNumber) ? null : tender.referenceNumber,
   title: tender.title,
   description: tender.description,
   category: tender.category ? { id: tender.category.id, name: tender.category.name } : null,

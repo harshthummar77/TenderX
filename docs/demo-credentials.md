@@ -3,7 +3,7 @@
 Created on 2026-10-04 to verify the plan 17 screens against a running stack.
 Everything here lives in the **Neon dev database** and is safe to delete.
 
-Password for every account: `TenderDemo2026`
+Password for every account: ` `
 
 | Role | Email | Party |
 |---|---|---|

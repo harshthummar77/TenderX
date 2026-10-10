@@ -21,7 +21,16 @@ export default tseslint.config(
     // Plain Node scripts: no tsconfig behind them, so declare the globals.
     files: ['**/*.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly', URL: 'readonly', Buffer: 'readonly' },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
+        // Node 18+ ships these; the review script uses them to drive the API.
+        fetch: 'readonly',
+        FormData: 'readonly',
+        Blob: 'readonly',
+      },
     },
   },
   {

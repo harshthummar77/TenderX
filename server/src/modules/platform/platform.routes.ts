@@ -4,6 +4,7 @@ import { authenticate } from '../../middleware/authenticate.js';
 import { requirePermission } from '../../middleware/requirePermission.js';
 import { validate } from '../../middleware/validate.js';
 import * as controller from './platform.controller.js';
+import { system } from './system.controller.js';
 
 export const platformRoutes = Router();
 
@@ -59,4 +60,12 @@ platformRoutes.get(
   authenticate,
   requirePermission(P.PLATFORM_MANAGE),
   controller.stats,
+);
+
+/** System metrics for the admin screen and any uptime monitor (19 §6). */
+platformRoutes.get(
+  '/platform/system',
+  authenticate,
+  requirePermission(P.PLATFORM_MANAGE),
+  system,
 );

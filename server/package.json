@@ -28,6 +28,7 @@
   "dependencies": {
     "@prisma/client": "^6",
     "@react-pdf/renderer": "^4",
+    "@sentry/node": "^9.46.0",
     "@tb/shared": "*",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2",

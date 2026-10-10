@@ -1,8 +1,8 @@
 import type { ActionTile, PlatformDashboard } from '@tb/shared';
 import { prisma } from '../../lib/prisma.js';
-import { verifyAuditChain } from '../../lib/audit.js';
 import { MAX_EMAIL_ATTEMPTS } from '../notification/notification.service.js';
 import { platformStats } from '../platform/platform.service.js';
+import { systemHealth } from '../platform/system.controller.js';
 
 /**
  * The platform dashboard (plan 15 §2).
@@ -17,30 +17,16 @@ import { platformStats } from '../platform/platform.service.js';
  */
 
 export async function buildPlatformDashboard(): Promise<PlatformDashboard> {
-  const since = new Date(Date.now() - 86_400_000);
+  // One probe, shared with GET /platform/system (19 §6), so the screen and the
+  // monitor can never report different numbers.
+  const [stats, orgsPending, vendorsPending, health] = await Promise.all([
+    platformStats(),
+    prisma.organization.count({ where: { status: 'PENDING_APPROVAL' } }),
+    prisma.vendor.count({ where: { status: 'PENDING_APPROVAL' } }),
+    systemHealth(),
+  ]);
 
-  // Measured around a trivial query, so it reports round-trip latency to Neon
-  // rather than the cost of whatever else is on this page.
-  const probeStartedAt = Date.now();
-  await prisma.$queryRaw`SELECT 1`;
-  const dbResponseMs = Date.now() - probeStartedAt;
-
-  const [stats, orgsPending, vendorsPending, unsentNotifications, failedEmails24h, chain] =
-    await Promise.all([
-      platformStats(),
-      prisma.organization.count({ where: { status: 'PENDING_APPROVAL' } }),
-      prisma.vendor.count({ where: { status: 'PENDING_APPROVAL' } }),
-      prisma.notification.count({ where: { emailSentAt: null, emailError: null } }),
-      prisma.notification.count({
-        where: { emailSentAt: null, emailError: { not: null }, createdAt: { gte: since } },
-      }),
-      /*
-       * Verification walks every row, so it is bounded here. A platform operator
-       * wants to know the chain is intact, not to pay for a full scan on every
-       * page load — the unbounded check lives on its own endpoint (plan 14 §C3).
-       */
-      verifyAuditChain(prisma, 500),
-    ]);
+  const { failedEmails24h } = health;
 
   const tiles: ActionTile[] = [];
 
@@ -64,7 +50,7 @@ export async function buildPlatformDashboard(): Promise<PlatformDashboard> {
   }
 
   // A broken chain is the one thing on this page that should stop the day.
-  if (!chain.valid) {
+  if (!health.auditChainValid) {
     tiles.push({
       key: 'audit_chain_broken',
       label: 'Audit chain verification failed',
@@ -87,12 +73,6 @@ export async function buildPlatformDashboard(): Promise<PlatformDashboard> {
     role: 'PLATFORM_ADMIN',
     actionRequired: tiles,
     stats,
-    health: {
-      unsentNotifications,
-      failedEmails24h,
-      auditChainValid: chain.valid,
-      auditRows: chain.checked,
-      dbResponseMs,
-    },
+    health,
   };
 }

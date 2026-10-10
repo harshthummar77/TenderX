@@ -210,10 +210,20 @@ export async function revokeToken(rawToken: string): Promise<void> {
   });
 }
 
+/*
+ * `SameSite=None` in production, and only there.
+ *
+ * The client is on Vercel and the API is on Render — different sites — so a Lax
+ * cookie is stored but never sent on the cross-site `POST /auth/refresh`, and
+ * every session would die silently when the 15-minute access token expired.
+ * `None` requires `Secure`, which holds in production because Render terminates
+ * TLS. Locally the Vite proxy makes the cookie first-party, so Lax is both
+ * correct and the stricter choice.
+ */
 const cookieOptions = (): CookieOptions => ({
   httpOnly: true,
   secure: isProd,
-  sameSite: 'lax',
+  sameSite: isProd ? 'none' : 'lax',
   path: REFRESH_COOKIE_PATH,
   maxAge: env.REFRESH_TOKEN_TTL_DAYS * 86_400_000,
 });

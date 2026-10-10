@@ -2,7 +2,6 @@ import type { IncomingMessage } from 'node:http';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
-import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { API_PREFIX } from './config/app.js';
 import { env } from './config/env.js';
@@ -11,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import { globalRateLimit } from './middleware/rateLimit.js';
 import { requestContext } from './middleware/requestContext.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
 import { router } from './routes.js';
 
 /**
@@ -26,7 +26,7 @@ app.disable('x-powered-by');
 // req.ip see the proxy instead of the client.
 app.set('trust proxy', 1);
 
-app.use(helmet());
+app.use(securityHeaders);
 // Exact origin, never '*': credentials:true + a wildcard silently breaks the
 // refresh-token cookie.
 app.use(cors({ origin: env.APP_URL, credentials: true }));

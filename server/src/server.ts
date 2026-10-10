@@ -4,9 +4,12 @@ import { env } from './config/env.js';
 import { registerJobs, stopJobs } from './jobs/index.js';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
+import { initSentry, sentryEnabled } from './lib/sentry.js';
+
+initSentry();
 
 const server = app.listen(env.PORT, () =>
-  logger.info({ port: env.PORT, version: APP_VERSION }, 'API up'),
+  logger.info({ port: env.PORT, version: APP_VERSION, sentry: sentryEnabled }, 'API up'),
 );
 
 registerJobs();
@@ -19,7 +22,9 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     shuttingDown = true;
     logger.info({ signal }, 'Shutting down');
 
-    server.close();
+    // Awaited, so in-flight requests finish before the pool closes. Render
+    // sends SIGTERM and waits before it kills the instance (19 §9).
+    await new Promise<void>((resolve) => server.close(() => resolve()));
     stopJobs();
     await prisma.$disconnect();
     process.exit(0);

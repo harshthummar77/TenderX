@@ -59,6 +59,11 @@ const EnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default('TenderBridge <no-reply@tenderbridge.local>'),
+
+  // Unset means error reporting is off, which is the normal state locally.
+  SENTRY_DSN: z.string().url().optional(),
+  // Injected by Render; used to tag the Sentry release with the deployed commit.
+  RENDER_GIT_COMMIT: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

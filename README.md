@@ -7,6 +7,18 @@ vendor invoice cleared by three-way match → payment with TDS and retention →
 Architecture and scope decisions: [`docs/architecture.md`](docs/architecture.md).
 Build order: `plans/00_MASTER_PLAN.md` → `plans/01` … `plans/20`.
 
+| Doc | What it answers |
+|---|---|
+| [`docs/architecture.md`](docs/architecture.md) | why the system is shaped like this |
+| [`docs/deployment.md`](docs/deployment.md) | how it reaches Render, Vercel and Neon |
+| [`docs/runbook.md`](docs/runbook.md) | what to do when it is broken, or cold before a demo |
+| [`docs/security.md`](docs/security.md) | every control, and what was cut on purpose |
+| [`docs/security-review.md`](docs/security-review.md) | the ten-point review, run, with results |
+| [`docs/testing.md`](docs/testing.md) | how to run the suites and what they cover |
+| [`docs/performance.md`](docs/performance.md) | measured latency, the bundle budget, cold start |
+| [`docs/access-control.md`](docs/access-control.md) | the permission matrix |
+| [`docs/data-dictionary.md`](docs/data-dictionary.md), [`docs/er-diagram.md`](docs/er-diagram.md) | the schema |
+
 ## Stack
 
 | Layer | Choice |
@@ -47,6 +59,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 | `npm run db:migrate` | `prisma migrate dev` (uses `DIRECT_URL`) |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:seed` | seed script (plan 20) |
+| `npm run check:conventions` | the three greps that replace custom lint rules |
 
 ## Health
 

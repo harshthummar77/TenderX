@@ -49,8 +49,15 @@ export default defineWorkspace([
       // Every call is a round trip to Neon and bcrypt is deliberately slow, so
       // the 5s default aborts tests mid-request — and a TRUNCATE in the next
       // test then deadlocks against those still-running queries.
-      testTimeout: 30_000,
-      hookTimeout: 30_000,
+      testTimeout: 60_000,
+      /*
+       * Measured, not guessed: a round trip to the test branch costs ~375ms from
+       * a development machine in India, and dashboard.spec's `beforeAll` seeds a
+       * whole source-to-pay chain — 110s of pure latency. At 30s it aborted and
+       * produced 16 failures that were all the same timeout. The budget is for
+       * the slowest honest path, not the fastest network.
+       */
+      hookTimeout: 180_000,
       fileParallelism: false,
       restoreMocks: true,
     },

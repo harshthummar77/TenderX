@@ -26,5 +26,20 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        /*
+         * Split the libraries out of the app bundle (19 §7). It does not make
+         * the first download smaller — it makes the second one much smaller,
+         * because these three change on an npm upgrade and the app code changes
+         * every deploy. Without it, one typo fix re-downloads React.
+         */
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query', '@tanstack/react-table'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+        },
+      },
+    },
   },
 });

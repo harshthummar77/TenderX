@@ -278,13 +278,31 @@ describe('route coverage', () => {
     'POST /invitations/:token/accept',
   ]);
 
-  /** Authenticated, but about your own account rather than a tenant resource. */
+  /**
+   * Authenticated, but about your own account rather than a tenant resource, so
+   * there is no permission to require: the caller is the only subject.
+   *
+   * Ownership is enforced in the service for each of these — a document or a
+   * notification belonging to someone else answers 403/404, which the isolation
+   * suite and the plan 19 §5 review both check — and `/dashboard` switches on
+   * the caller's own role rather than gating on a permission.
+   */
   const IDENTITY = new Set([
     'POST /auth/logout',
     'POST /auth/logout-all',
     'GET /auth/me',
     'PATCH /auth/me',
     'POST /auth/change-password',
+    'GET /documents',
+    'GET /documents/:id',
+    'GET /documents/:id/download',
+    'GET /notifications',
+    'GET /notifications/unread-count',
+    'POST /notifications/read-all',
+    'POST /notifications/:id/read',
+    'GET /me/notification-preferences',
+    'GET /activity/me',
+    'GET /dashboard',
   ]);
 
   interface RouteInfo {
@@ -312,7 +330,11 @@ describe('route coverage', () => {
     };
 
     walk(stack, '');
-    return routes;
+    // The /_test tree is mounted only under `if (isTest)` in routes.ts and
+    // additionally refuses every request with a 404 unless `isTest` — see
+    // test.routes.ts. It has no user to authenticate, so it is not a route this
+    // assertion can say anything useful about.
+    return routes.filter((route) => !route.key.includes(' /_test/'));
   }
 
   it('finds the mounted routes', () => {

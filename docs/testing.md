@@ -42,6 +42,25 @@ Integration tests run one file at a time on purpose. They share a single
 database and truncate every table between files; two workers would delete each
 other's fixtures mid-test.
 
+### Why the timeouts look generous
+
+A round trip to the Neon test branch costs about **375 ms** from a development
+machine in India, measured with `GET /api/v1/ready` (a bare `SELECT 1`). Nothing
+in the suite is slow; there is simply a lot of latency in each of the many calls
+a fixture makes.
+
+Concretely: `dashboard.spec`'s `beforeAll` seeds a whole source-to-pay chain and
+takes **110 s**, and the file as a whole runs in 741 s for 17 tests. At the
+original 30 s `hookTimeout` it aborted and reported 16 failures that were all
+the same timeout wearing different names — which is why the integration project
+now allows 180 s for hooks and 60 s per test.
+
+**Consequence worth stating plainly:** the whole integration suite takes hours
+on this network path, not the three minutes plan 18 §9 hoped for. On CI, or on
+any machine near the database, the same files are an order of magnitude faster
+because the constant drops from 375 ms to single digits. If the suite feels
+broken, measure `/ready` first — the number explains everything.
+
 ## Adding a fixture
 
 Scenario helpers live in `server/test/helpers/`, and each builds on the last, so

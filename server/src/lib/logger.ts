@@ -20,6 +20,8 @@ export const redactPaths = [
   '*.refreshToken',
   '*.accessToken',
   '*.tokenHash',
+  '*.bankAccountNumber',
+  '*.bankIfsc',
   '*.token',
   'admin.password',
 ];

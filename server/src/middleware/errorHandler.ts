@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
 import { isProd } from '../config/env.js';
+import { captureError } from '../lib/sentry.js';
 import { AppError, type FieldError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 
@@ -81,6 +82,8 @@ export function errorHandler(
   const log = logger.child({ requestId: req.id, code, status });
   if (status >= 500) {
     log.error({ err }, 'Unhandled error');
+    // Tagged with the same requestId that is in the log line and the response.
+    captureError(err, String(req.id));
   } else {
     log.warn({ reason: message }, 'Request failed');
   }

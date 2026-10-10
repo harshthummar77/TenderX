@@ -1,0 +1,77 @@
+# Render blueprint for the API (plan 19 §3).
+#
+# The client is on Vercel; this file only describes the Node service.
+services:
+  - type: web
+    name: tenderbridge-api
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+
+    buildCommand: npm ci && npm run build:shared && npm run build -w server
+
+    # Migrations run HERE, not at boot. Render runs the pre-deploy command once
+    # per deploy, before the new instance takes traffic — migrating in
+    # server.ts races itself the moment two instances overlap (19 §3).
+    #
+    # Pre-deploy commands are a paid-instance feature. On the free plan Render
+    # ignores this line, so the first deploy of any migration has to be applied
+    # by hand first — see docs/deployment.md, which has the exact command.
+    preDeployCommand: npx prisma migrate deploy --schema server/prisma/schema
+
+    startCommand: node server/dist/server.js
+
+    # /health deliberately does not touch the database, so a sleeping Neon
+    # compute cannot fail the health check. /ready is the one that probes it.
+    healthCheckPath: /api/v1/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # PORT is deliberately absent: Render injects it, and env.ts coerces it.
+      # Hardcoding one here only creates a value to disagree with.
+
+      # Pooled for the app, direct for migrations — Prisma picks between them
+      # via `directUrl` in the schema. Both point at the Neon `main` branch and
+      # are set in the Render dashboard, never here.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+
+      # 32+ random bytes each, and different from one another (19 §4).
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # Exactly one origin: `credentials: true` makes a wildcard impossible,
+      # and this is also the base for every link in an outgoing email.
+      - key: APP_URL
+        sync: false
+      - key: API_URL
+        sync: false
+
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+      # Unset means error reporting is off; the app boots either way.
+      - key: SENTRY_DSN
+        sync: false

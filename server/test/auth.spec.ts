@@ -229,7 +229,11 @@ describe('refresh rotation', () => {
     const { cookie } = await registerOrg();
 
     expect(cookie).toMatch(/HttpOnly/i);
+    // Lax under test, because the suite runs with NODE_ENV=test; production
+    // sends SameSite=None so the cookie survives the Vercel-to-Render hop, and
+    // None without Secure would be rejected by the browser.
     expect(cookie).toMatch(/SameSite=Lax/i);
+    expect(cookie).not.toMatch(/SameSite=None/i);
     expect(cookie).toMatch(/Path=\/api\/v1\/auth/i);
   });
 

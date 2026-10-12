@@ -12,6 +12,7 @@ import { RegisterPage } from '@/features/auth/pages/Register';
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPassword';
 import { ActivityPage, EntityActivityPage, PlatformActivityPage } from '@/features/activity/pages/ActivityPage';
 import { DashboardPage } from '@/features/dashboard/pages/Dashboard';
+import { LandingPage } from '@/features/landing/pages/Landing';
 import { DispatchFormPage } from '@/features/deliveries/pages/DispatchForm';
 import { ApprovalDetailPage, ApprovalListPage } from '@/features/evaluation/pages/Approvals';
 import { ComparisonPage } from '@/features/evaluation/pages/Comparison';
@@ -123,17 +124,22 @@ export const router = createBrowserRouter([
       { path: '/reset-password/:token', element: <ResetPasswordPage /> },
       { path: '/accept-invite/:token', element: <AcceptInvitePage /> },
 
-      /* --- authenticated ------------------------------------------------ */
+      /* --- public landing + authenticated app --------------------------- */
+      // `/` is the public marketing page. Everything else below `/` is the
+      // authenticated app, gated by a pathless layout so every child URL
+      // (/dashboard, /tenders/:id, …) is exactly what it was before.
       {
         path: '/',
-        element: (
-          <RequireAuth>
-            <AppShell />
-          </RequireAuth>
-        ),
+        element: <Outlet />,
         children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
-
+          { index: true, element: <LandingPage /> },
+          {
+            element: (
+              <RequireAuth>
+                <AppShell />
+              </RequireAuth>
+            ),
+            children: [
           {
             path: 'dashboard',
             handle: { crumb: 'Dashboard' },
@@ -348,6 +354,8 @@ export const router = createBrowserRouter([
           // anonymous visitor hits `RequireAuth` above this and lands on /login
           // with the bad path remembered — they would need to sign in either way.
           { path: '*', element: <NotFound /> },
+            ],
+          },
         ],
       },
     ],

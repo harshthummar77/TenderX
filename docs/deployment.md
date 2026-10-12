@@ -194,8 +194,8 @@ then, against the production branch:
 
 ```sql
 INSERT INTO users (id, email, "fullName", "passwordHash", role, status, "createdAt", "updatedAt")
-VALUES (gen_random_uuid(), 'you@example.com', 'Platform Admin',
-        '<the hash>', 'PLATFORM_ADMIN', 'ACTIVE', now(), now());
+VALUES (gen_random_uuid(), 'harshthummar77@gmail.com', 'Platform Admin',
+        '$2a$12$/ay8pRcjffAAtnRnZdOQXOWz2joPdX1XIhJFSX/Z7g22qrhv1.7wy', 'PLATFORM_ADMIN', 'ACTIVE', now(), now());
 ```
 
 Never reuse the demo password from `docs/demo-credentials.md` here.

@@ -36,6 +36,22 @@
 
   --color-ring: oklch(52% 0.16 250 / 45%);
 
+  /* ------------------------------------------------------------------ brand
+     The Tenderx palette. Marketing surfaces (the landing page) use these
+     directly; the instrument-panel tokens above stay as tuned. Roles:
+       deep  (#355872) — primary brand: headings, dark CTAs, deep gradient stop
+       mid   (#7AAACE) — accent: secondary actions, borders, gradient mid
+       light (#9CD5FF) — highlight: glows, interactive accents (shines in dark)
+       paper (#F7F8F0) — the light-mode marketing background / surface
+     ------------------------------------------------------------------------ */
+  --color-brand-deep: #355872;
+  --color-brand: #7aaace;
+  --color-brand-light: #9cd5ff;
+  --color-brand-paper: #f7f8f0;
+  /* Accent text that must stay readable in both themes: deep on paper,
+     light-sky on dark. Flipped in the dark token blocks below. */
+  --color-brand-ink: #355872;
+
   --font-sans: 'Inter var', 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
@@ -61,6 +77,11 @@
     font-size: 0.875rem; /* 14px — dense by default, this is a back office */
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    /* The one place a theme switch is allowed to animate — a calm cross-fade,
+       not every element transitioning at once. Killed by reduced-motion below. */
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   /* Every monetary and quantity figure is mono + tabular + right aligned.
@@ -79,15 +100,20 @@
 
   /* The native date picker indicator is invisible on a dark surface. */
   @media (prefers-color-scheme: dark) {
-    ::-webkit-calendar-picker-indicator {
+    :root:not([data-theme='light']) ::-webkit-calendar-picker-indicator {
       filter: invert(1);
     }
   }
+  :root[data-theme='dark'] ::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }
 
-/* Dark mode is the same tokens with different values — nothing else changes. */
+/* Dark mode is the same tokens with different values — nothing else changes.
+   Applied when the OS is dark and the user has not forced light, OR the user
+   has explicitly chosen dark. The two selectors share one value set. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --color-bg: oklch(19% 0.012 255);
     --color-surface: oklch(23% 0.014 255);
     --color-subtle: oklch(27% 0.016 255);
@@ -107,10 +133,84 @@
     --color-info: oklch(70% 0.1 230);
 
     --color-ring: oklch(66% 0.15 250 / 50%);
+    --color-brand-ink: #9cd5ff;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: oklch(19% 0.012 255);
+  --color-surface: oklch(23% 0.014 255);
+  --color-subtle: oklch(27% 0.016 255);
+  --color-border: oklch(32% 0.016 255);
+  --color-border-strong: oklch(40% 0.018 255);
+  --color-text: oklch(95% 0.005 255);
+  --color-muted: oklch(70% 0.014 255);
+
+  --color-primary: oklch(66% 0.15 250);
+  --color-primary-hover: oklch(72% 0.15 250);
+  --color-on-primary: oklch(20% 0.015 255);
+
+  --color-success: oklch(70% 0.14 150);
+  --color-warning: oklch(79% 0.15 75);
+  --color-danger: oklch(68% 0.18 25);
+  --color-danger-hover: oklch(73% 0.18 25);
+  --color-info: oklch(70% 0.1 230);
+
+  --color-ring: oklch(66% 0.15 250 / 50%);
+  --color-brand-ink: #9cd5ff;
+}
+
+/* --------------------------------------------------------------- landing
+   Scroll-reveal + entrance motion for the marketing page only. Elements are
+   visible by default (no JS => no hidden content); `.reveal` opts in and the
+   page's IntersectionObserver adds `.reveal-in` when the element enters view.
+   All of it is neutralised by the reduced-motion block below. */
+@layer utilities {
+  .reveal {
+    opacity: 0;
+    transform: translateY(1.5rem);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s ease;
+  }
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+  }
+  @keyframes tx-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animate-rise {
+    animation: tx-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes tx-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  .animate-float {
+    animation: tx-float 6s ease-in-out infinite;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Reveal items must never stay hidden when motion is off. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
   *,
   ::before,
   ::after {

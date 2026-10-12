@@ -4,7 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>TenderBridge</title>
+    <title>TenderX — Plan. Personalize. Pursue.</title>
+    <!--
+      No-flash theme: set the attribute before first paint so a stored dark/light
+      preference never flashes the wrong palette. No stored preference => no
+      attribute => the prefers-color-scheme media query in index.css governs.
+    -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('tb.theme');
+          if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--

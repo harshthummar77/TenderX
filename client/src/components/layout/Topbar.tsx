@@ -12,6 +12,7 @@ import { apiGetPage, apiGet, apiPost } from '@/lib/api';
 import { qk } from '@/lib/queryKeys';
 import { formatRelative, initials } from '@/lib/format';
 import { useAuth } from '@/hooks/useAuth';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dropdown, DropdownItem, DropdownLabel, DropdownSeparator } from '@/components/ui/dropdown';
@@ -193,6 +194,7 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
 
       <div className="flex-1" />
 
+      <ThemeToggle />
       <NotificationBell />
 
       <Dropdown

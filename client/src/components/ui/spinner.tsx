@@ -27,10 +27,20 @@ export function Spinner({
 }
 
 /** The boot screen (plan 16 §3 step 1) and any route-level suspense fallback. */
-export function FullPageSpinner({ label = 'Loading TenderBridge' }: { label?: string }) {
+export function FullPageSpinner({ label = 'Loading TenderX' }: { label?: string }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-bg">
-      <Spinner size="xl" className="text-primary" label={label} />
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg">
+      {/* loader.png is the app loader; if it is missing the spinner stands in. */}
+      <img
+        src="/loader.png"
+        alt=""
+        aria-hidden
+        className="h-16 w-16 animate-pulse object-contain motion-reduce:animate-none"
+        onError={(event) => {
+          event.currentTarget.style.display = 'none';
+        }}
+      />
+      <Spinner size="lg" className="text-primary" label={label} />
       <p className="text-sm text-muted">{label}…</p>
     </div>
   );

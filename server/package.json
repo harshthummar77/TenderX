@@ -19,7 +19,8 @@
     "db:reset": "prisma migrate reset",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "check:conventions": "node scripts/check-conventions.mjs"
+    "check:conventions": "node scripts/check-conventions.mjs",
+    "docs:api": "tsx scripts/generate-api-doc.ts"
   },
   "prisma": {
     "schema": "prisma/schema",
